@@ -15,9 +15,12 @@ import { Route as GaleriaRouteImport } from './routes/galeria'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminTemporadasRouteImport } from './routes/admin.temporadas'
+import { Route as AdminTarifasRouteImport } from './routes/admin.tarifas'
 import { Route as AdminReservasRouteImport } from './routes/admin.reservas'
 import { Route as AdminConsultasRouteImport } from './routes/admin.consultas'
 import { Route as AdminCalendarioRouteImport } from './routes/admin.calendario'
+import { Route as AdminBloqueosRouteImport } from './routes/admin.bloqueos'
 import { Route as AdminClientesIndexRouteImport } from './routes/admin.clientes.index'
 import { Route as AdminClientesIdRouteImport } from './routes/admin.clientes.$id'
 
@@ -51,6 +54,16 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTemporadasRoute = AdminTemporadasRouteImport.update({
+  id: '/temporadas',
+  path: '/temporadas',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTarifasRoute = AdminTarifasRouteImport.update({
+  id: '/tarifas',
+  path: '/tarifas',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminReservasRoute = AdminReservasRouteImport.update({
   id: '/reservas',
   path: '/reservas',
@@ -64,6 +77,11 @@ const AdminConsultasRoute = AdminConsultasRouteImport.update({
 const AdminCalendarioRoute = AdminCalendarioRouteImport.update({
   id: '/calendario',
   path: '/calendario',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBloqueosRoute = AdminBloqueosRouteImport.update({
+  id: '/bloqueos',
+  path: '/bloqueos',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminClientesIndexRoute = AdminClientesIndexRouteImport.update({
@@ -83,9 +101,12 @@ export interface FileRoutesByFullPath {
   '/galeria': typeof GaleriaRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
+  '/admin/bloqueos': typeof AdminBloqueosRoute
   '/admin/calendario': typeof AdminCalendarioRoute
   '/admin/consultas': typeof AdminConsultasRoute
   '/admin/reservas': typeof AdminReservasRoute
+  '/admin/tarifas': typeof AdminTarifasRoute
+  '/admin/temporadas': typeof AdminTemporadasRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/clientes/$id': typeof AdminClientesIdRoute
   '/admin/clientes/': typeof AdminClientesIndexRoute
@@ -95,9 +116,12 @@ export interface FileRoutesByTo {
   '/galeria': typeof GaleriaRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
+  '/admin/bloqueos': typeof AdminBloqueosRoute
   '/admin/calendario': typeof AdminCalendarioRoute
   '/admin/consultas': typeof AdminConsultasRoute
   '/admin/reservas': typeof AdminReservasRoute
+  '/admin/tarifas': typeof AdminTarifasRoute
+  '/admin/temporadas': typeof AdminTemporadasRoute
   '/admin': typeof AdminIndexRoute
   '/admin/clientes/$id': typeof AdminClientesIdRoute
   '/admin/clientes': typeof AdminClientesIndexRoute
@@ -109,9 +133,12 @@ export interface FileRoutesById {
   '/galeria': typeof GaleriaRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
+  '/admin/bloqueos': typeof AdminBloqueosRoute
   '/admin/calendario': typeof AdminCalendarioRoute
   '/admin/consultas': typeof AdminConsultasRoute
   '/admin/reservas': typeof AdminReservasRoute
+  '/admin/tarifas': typeof AdminTarifasRoute
+  '/admin/temporadas': typeof AdminTemporadasRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/clientes/$id': typeof AdminClientesIdRoute
   '/admin/clientes/': typeof AdminClientesIndexRoute
@@ -124,9 +151,12 @@ export interface FileRouteTypes {
     | '/galeria'
     | '/reservar'
     | '/ubicacion'
+    | '/admin/bloqueos'
     | '/admin/calendario'
     | '/admin/consultas'
     | '/admin/reservas'
+    | '/admin/tarifas'
+    | '/admin/temporadas'
     | '/admin/'
     | '/admin/clientes/$id'
     | '/admin/clientes/'
@@ -136,9 +166,12 @@ export interface FileRouteTypes {
     | '/galeria'
     | '/reservar'
     | '/ubicacion'
+    | '/admin/bloqueos'
     | '/admin/calendario'
     | '/admin/consultas'
     | '/admin/reservas'
+    | '/admin/tarifas'
+    | '/admin/temporadas'
     | '/admin'
     | '/admin/clientes/$id'
     | '/admin/clientes'
@@ -149,9 +182,12 @@ export interface FileRouteTypes {
     | '/galeria'
     | '/reservar'
     | '/ubicacion'
+    | '/admin/bloqueos'
     | '/admin/calendario'
     | '/admin/consultas'
     | '/admin/reservas'
+    | '/admin/tarifas'
+    | '/admin/temporadas'
     | '/admin/'
     | '/admin/clientes/$id'
     | '/admin/clientes/'
@@ -209,6 +245,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/temporadas': {
+      id: '/admin/temporadas'
+      path: '/temporadas'
+      fullPath: '/admin/temporadas'
+      preLoaderRoute: typeof AdminTemporadasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/tarifas': {
+      id: '/admin/tarifas'
+      path: '/tarifas'
+      fullPath: '/admin/tarifas'
+      preLoaderRoute: typeof AdminTarifasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/reservas': {
       id: '/admin/reservas'
       path: '/reservas'
@@ -230,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCalendarioRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/bloqueos': {
+      id: '/admin/bloqueos'
+      path: '/bloqueos'
+      fullPath: '/admin/bloqueos'
+      preLoaderRoute: typeof AdminBloqueosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/clientes/': {
       id: '/admin/clientes/'
       path: '/clientes'
@@ -248,18 +305,24 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminBloqueosRoute: typeof AdminBloqueosRoute
   AdminCalendarioRoute: typeof AdminCalendarioRoute
   AdminConsultasRoute: typeof AdminConsultasRoute
   AdminReservasRoute: typeof AdminReservasRoute
+  AdminTarifasRoute: typeof AdminTarifasRoute
+  AdminTemporadasRoute: typeof AdminTemporadasRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminClientesIdRoute: typeof AdminClientesIdRoute
   AdminClientesIndexRoute: typeof AdminClientesIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminBloqueosRoute: AdminBloqueosRoute,
   AdminCalendarioRoute: AdminCalendarioRoute,
   AdminConsultasRoute: AdminConsultasRoute,
   AdminReservasRoute: AdminReservasRoute,
+  AdminTarifasRoute: AdminTarifasRoute,
+  AdminTemporadasRoute: AdminTemporadasRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminClientesIdRoute: AdminClientesIdRoute,
   AdminClientesIndexRoute: AdminClientesIndexRoute,
