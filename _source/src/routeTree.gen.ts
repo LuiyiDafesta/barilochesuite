@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as GaleriaRouteImport } from './routes/galeria'
+import { Route as MiReservaRouteImport } from './routes/mi-reserva'
 import { Route as ReservarRouteImport } from './routes/reservar'
 import { Route as UbicacionRouteImport } from './routes/ubicacion'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -43,6 +44,11 @@ const AdminRoute = AdminRouteImport.update({
 const GaleriaRoute = GaleriaRouteImport.update({
   id: '/galeria',
   path: '/galeria',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MiReservaRoute = MiReservaRouteImport.update({
+  id: '/mi-reserva',
+  path: '/mi-reserva',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReservarRoute = ReservarRouteImport.update({
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/galeria': typeof GaleriaRoute
+  '/mi-reserva': typeof MiReservaRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
   '/admin/bloqueos': typeof AdminBloqueosRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/galeria': typeof GaleriaRoute
+  '/mi-reserva': typeof MiReservaRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
   '/admin/bloqueos': typeof AdminBloqueosRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/galeria': typeof GaleriaRoute
+  '/mi-reserva': typeof MiReservaRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
   '/admin/bloqueos': typeof AdminBloqueosRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/galeria'
+    | '/mi-reserva'
     | '/reservar'
     | '/ubicacion'
     | '/admin/bloqueos'
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/galeria'
+    | '/mi-reserva'
     | '/reservar'
     | '/ubicacion'
     | '/admin/bloqueos'
@@ -246,6 +257,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/galeria'
+    | '/mi-reserva'
     | '/reservar'
     | '/ubicacion'
     | '/admin/bloqueos'
@@ -269,6 +281,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   GaleriaRoute: typeof GaleriaRoute
+  MiReservaRoute: typeof MiReservaRoute
   ReservarRoute: typeof ReservarRoute
   UbicacionRoute: typeof UbicacionRoute
 }
@@ -294,6 +307,13 @@ declare module '@tanstack/react-router' {
       path: '/galeria'
       fullPath: '/galeria'
       preLoaderRoute: typeof GaleriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mi-reserva': {
+      id: '/mi-reserva'
+      path: '/mi-reserva'
+      fullPath: '/mi-reserva'
+      preLoaderRoute: typeof MiReservaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reservar': {
@@ -460,6 +480,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   GaleriaRoute: GaleriaRoute,
+  MiReservaRoute: MiReservaRoute,
   ReservarRoute: ReservarRoute,
   UbicacionRoute: UbicacionRoute,
 }

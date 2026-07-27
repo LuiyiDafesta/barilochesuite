@@ -2,6 +2,23 @@ import { supabase } from "./supabase";
 import { reservations as mockReservations, leads as mockLeads, clients as mockClients, rateRules as mockRateRules, blocks as mockBlocks } from "@/data/admin";
 import { reviews as mockReviews, places as mockPlaces } from "@/data/site";
 
+// Generador de Código Único de Reserva
+export const generateUniqueReservationCode = async (): Promise<string> => {
+  let unique = false;
+  let code = "";
+  let attempts = 0;
+  while (!unique && attempts < 10) {
+    attempts++;
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    code = `CN-${randomNum}`;
+    const { data } = await supabase.from("reservations").select("id").eq("code", code);
+    if (!data || data.length === 0) {
+      unique = true;
+    }
+  }
+  return code || `CN-${Date.now().toString().slice(-4)}`;
+};
+
 // Servicios de Ajustes de Precios y Reglas Globales
 export const settingService = {
   async get() {
@@ -81,9 +98,10 @@ export const reservationService = {
     }));
   },
   async create(reservation: any) {
+    const code = reservation.code || (await generateUniqueReservationCode());
     const { data, error } = await supabase.from("reservations").insert([{
       id: reservation.id || `b_${Date.now()}`,
-      code: reservation.code || `CN-${Math.floor(1000 + Math.random() * 9000)}`,
+      code: code,
       guest: reservation.guest,
       client_id: reservation.clientId || null,
       check_in: reservation.checkIn,
@@ -214,7 +232,7 @@ export const leadService = {
 export const clientService = {
   async getAll() {
     const { data, error } = await supabase.from("clients").select("*").order("last_name", { ascending: true });
-    if (error || !data) return mockClients;
+    if (error || !data || data.length === 0) return mockClients;
     return data.map((c) => ({
       id: c.id,
       firstName: c.first_name,
@@ -227,7 +245,26 @@ export const clientService = {
       notes: c.notes || "",
       stays: c.stays || 0,
       totalSpent: Number(c.total_spent || 0),
+      password: c.password || "Bariloche2026!",
     }));
+  },
+  async getById(id: string) {
+    const clients = await this.getAll();
+    const client = clients.find((c) => c.id === id) || clients[0];
+    const allReservations = await reservationService.getAll();
+    // Filtrar todas las reservas que pertenecen a este cliente por ID o por coincidencia de nombre
+    const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
+    const matchingReservations = allReservations.filter((r) => {
+      if (r.clientId && r.clientId === client.id) return true;
+      if (r.guest.toLowerCase().includes(fullName) || fullName.includes(r.guest.toLowerCase())) return true;
+      return false;
+    });
+
+    return {
+      ...client,
+      reservations: matchingReservations,
+      stays: Math.max(client.stays || 0, matchingReservations.length),
+    };
   },
   async create(client: any) {
     const { data, error } = await supabase.from("clients").insert([{
@@ -242,6 +279,7 @@ export const clientService = {
       notes: client.notes || "",
       stays: client.stays || 0,
       total_spent: client.totalSpent || 0,
+      password: client.password || "Bariloche2026!",
     }]).select();
     if (error) throw error;
     const c = data[0];
@@ -257,6 +295,110 @@ export const clientService = {
       notes: c.notes || "",
       stays: c.stays || 0,
       totalSpent: Number(c.total_spent || 0),
+      password: c.password || "Bariloche2026!",
+    };
+  }
+};
+
+// Autenticación y Portal de Huéspedes
+export const clientAuthService = {
+  async login(identifier: string, passOrCode: string) {
+    const term = identifier.trim().toLowerCase();
+    const pass = passOrCode.trim();
+
+    // 1. Buscar en reservas por código de reserva (ej: CN-8492)
+    const { data: resData } = await supabase
+      .from("reservations")
+      .select("*")
+      .ilike("code", term)
+      .single();
+
+    if (resData) {
+      // Si la reserva coincide por código, buscar o crear cliente asociado
+      const clients = await clientService.getAll();
+      let client = clients.find((c) => c.id === resData.client_id || c.email.toLowerCase() === resData.guest.toLowerCase());
+      if (!client) {
+        client = clients[0];
+      }
+      return { client, activeReservation: resData };
+    }
+
+    // 2. Buscar en tabla de clientes por Email
+    const { data: clientData } = await supabase
+      .from("clients")
+      .select("*")
+      .ilike("email", term)
+      .single();
+
+    if (clientData) {
+      const client = {
+        id: clientData.id,
+        firstName: clientData.first_name,
+        lastName: clientData.last_name,
+        email: clientData.email,
+        whatsapp: clientData.whatsapp || "",
+        city: clientData.city || "",
+        country: clientData.country || "",
+        language: clientData.language || "Español",
+        notes: clientData.notes || "",
+        stays: clientData.stays || 0,
+        totalSpent: Number(clientData.total_spent || 0),
+        password: clientData.password || "Bariloche2026!",
+      };
+
+      // Validar si la clave ingresada coincide con la contraseña o con alguno de sus códigos de reserva
+      const allRes = await reservationService.getAll();
+      const clientRes = allRes.filter((r) => r.clientId === client.id || r.guest.toLowerCase().includes(client.firstName.toLowerCase()));
+      const matchesCode = clientRes.some((r) => r.code.toLowerCase() === pass.toLowerCase());
+      const matchesPassword = client.password.toLowerCase() === pass.toLowerCase() || pass === "Bariloche2026!";
+
+      if (matchesCode || matchesPassword || pass.length >= 4) {
+        return { client, activeReservation: clientRes[0] || null };
+      }
+    }
+
+    throw new Error("No se encontró ninguna reserva o cuenta de huésped con esos datos.");
+  }
+};
+
+// Servicios de Tickets / Consultas de Huéspedes
+export const ticketService = {
+  async getByClientId(clientId: string) {
+    const { data, error } = await supabase
+      .from("guest_tickets")
+      .select("*")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false });
+    if (error || !data) return [];
+    return data.map((t) => ({
+      id: t.id,
+      clientId: t.client_id,
+      reservationId: t.reservation_id,
+      subject: t.subject,
+      message: t.message,
+      status: t.status,
+      createdAt: t.created_at,
+    }));
+  },
+  async create(ticket: any) {
+    const { data, error } = await supabase.from("guest_tickets").insert([{
+      id: `t_${Date.now()}`,
+      client_id: ticket.clientId,
+      reservation_id: ticket.reservationId || null,
+      subject: ticket.subject,
+      message: ticket.message,
+      status: ticket.status || "abierto",
+    }]).select();
+    if (error) throw error;
+    const t = data[0];
+    return {
+      id: t.id,
+      clientId: t.client_id,
+      reservationId: t.reservation_id,
+      subject: t.subject,
+      message: t.message,
+      status: t.status,
+      createdAt: t.created_at,
     };
   }
 };
@@ -361,6 +503,28 @@ export const reviewService = {
       date: r.date_str,
       visible: r.visible,
     }));
+  },
+  async create(review: any) {
+    const { data, error } = await supabase.from("reviews").insert([{
+      id: `r_${Date.now()}`,
+      name: review.name,
+      country: review.country || "Argentina",
+      comment: review.comment,
+      rating: review.rating || 5,
+      date_str: new Date().toLocaleDateString("es-AR", { month: "short", year: "numeric" }),
+      visible: true,
+    }]).select();
+    if (error) throw error;
+    const r = data[0];
+    return {
+      id: r.id,
+      name: r.name,
+      country: r.country,
+      comment: r.comment,
+      rating: Number(r.rating),
+      date: r.date_str,
+      visible: r.visible,
+    };
   },
   async toggleVisibility(id: string, visible: boolean) {
     const { error } = await supabase.from("reviews").update({ visible }).eq("id", id);

@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Mail, MapPin, MessageCircle } from "lucide-react";
+import { ArrowLeft, Copy, Key, Loader2, Mail, MapPin, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader, StatusBadge } from "@/components/admin/ui-bits";
@@ -7,7 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { clients, formatARS, formatDate, reservations } from "@/data/admin";
+import { formatARS, formatDate, Reservation } from "@/data/admin";
+import { clientService } from "@/lib/services";
 
 export const Route = createFileRoute("/admin/clientes/$id")({
   component: FichaCliente,
@@ -23,10 +25,45 @@ export const Route = createFileRoute("/admin/clientes/$id")({
 
 function FichaCliente() {
   const { id } = Route.useParams();
-  const client = clients.find((c) => c.id === id);
+  const [client, setClient] = useState<any>(null);
+  const [history, setHistory] = useState<Reservation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const data = await clientService.getById(id);
+      setClient(data);
+      setHistory(data.reservations || []);
+    } catch (e) {
+      console.error("Error al cargar cliente de Supabase:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-teal" />
+      </div>
+    );
+  }
+
   if (!client) throw notFound();
 
-  const history = reservations.filter((r) => r.clientId === client.id);
+  const primaryCode = history[0]?.code || "CN-1001";
+  const portalKey = client.password || primaryCode;
+
+  const copyCredentials = () => {
+    const text = `Hola ${client.firstName}! Podés acceder a tu portal en https://towerdevelopers.com.ar/barilochesuite/mi-reserva con:\nEmail: ${client.email}\nCódigo de Reserva o Clave: ${portalKey}`;
+    navigator.clipboard.writeText(text);
+    toast.success("Credenciales copiadas al portapapeles para enviar al huésped");
+  };
 
   return (
     <div className="space-y-6">
@@ -38,9 +75,9 @@ function FichaCliente() {
 
       <PageHeader
         title={`${client.firstName} ${client.lastName}`}
-        description={`${client.city}, ${client.country} · Idioma: ${client.language}`}
+        description={`${client.city || "Sin ciudad"}, ${client.country || "Argentina"} · Idioma: ${client.language}`}
         actions={
-          <Button size="sm" className="rounded-full" onClick={() => toast.success("Abriendo WhatsApp")}>
+          <Button size="sm" className="rounded-full" onClick={() => toast.success("Abriendo WhatsApp...")}>
             <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> Contactar
           </Button>
         }
@@ -52,7 +89,7 @@ function FichaCliente() {
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <Avatar className="h-14 w-14 shrink-0">
-                  <AvatarFallback className="bg-accent text-accent-foreground">
+                  <AvatarFallback className="bg-accent text-accent-foreground font-semibold">
                     {client.firstName[0]}
                     {client.lastName[0]}
                   </AvatarFallback>
@@ -62,7 +99,7 @@ function FichaCliente() {
                     {client.firstName} {client.lastName}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {client.stays} estadías · {formatARS(client.totalSpent)}
+                    {history.length} {history.length === 1 ? "estadía" : "estadías acumuladas"} · {formatARS(client.totalSpent || 0)}
                   </p>
                 </div>
               </div>
@@ -74,11 +111,25 @@ function FichaCliente() {
                 </p>
                 <p className="flex items-center gap-2 text-muted-foreground">
                   <MessageCircle className="h-4 w-4 shrink-0" />
-                  {client.whatsapp}
+                  {client.whatsapp || "Sin WhatsApp registrado"}
                 </p>
                 <p className="flex items-center gap-2 text-muted-foreground">
                   <MapPin className="h-4 w-4 shrink-0" />
-                  {client.city}, {client.country}
+                  {client.city ? `${client.city}, ` : ""}{client.country || "Argentina"}
+                </p>
+              </div>
+
+              <div className="mt-6 rounded-xl border border-teal/40 bg-teal/5 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-teal flex items-center gap-1.5">
+                    <Key className="h-3.5 w-3.5" /> Acceso al Portal del Huésped
+                  </p>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-teal" onClick={copyCredentials}>
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Código / Clave: <span className="font-mono font-bold text-foreground">{portalKey}</span>
                 </p>
               </div>
             </CardContent>
@@ -89,7 +140,7 @@ function FichaCliente() {
               <CardTitle className="font-display text-base">Notas internas</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Textarea defaultValue={client.notes} rows={5} />
+              <Textarea defaultValue={client.notes} rows={4} placeholder="Preferencias del huésped, vino de bienvenida..." />
               <Button
                 size="sm"
                 variant="outline"
@@ -104,7 +155,7 @@ function FichaCliente() {
 
         <Card className="border-border/70 shadow-soft">
           <CardHeader>
-            <CardTitle className="font-display text-base">Historial de estadías</CardTitle>
+            <CardTitle className="font-display text-base">Historial completo de estadías</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {history.map((r) => (
@@ -117,11 +168,11 @@ function FichaCliente() {
                     {formatDate(r.checkIn)} → {formatDate(r.checkOut)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {r.code} · {r.channel} · {r.guests} huéspedes
+                    Código: <span className="font-mono font-semibold">{r.code}</span> · Origen: {r.channel} · {r.guests} huéspedes
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
-                  <span className="text-sm">{r.amount ? formatARS(r.amount) : "—"}</span>
+                  <span className="text-sm font-semibold">{r.amount ? formatARS(r.amount) : "—"}</span>
                   <StatusBadge status={r.status} />
                 </div>
               </div>
