@@ -314,7 +314,6 @@ export const clientAuthService = {
       .single();
 
     if (resData) {
-      // Si la reserva coincide por código, buscar o crear cliente asociado
       const clients = await clientService.getAll();
       let client = clients.find((c) => c.id === resData.client_id || c.email.toLowerCase() === resData.guest.toLowerCase());
       if (!client) {
@@ -346,7 +345,6 @@ export const clientAuthService = {
         password: clientData.password || "Bariloche2026!",
       };
 
-      // Validar si la clave ingresada coincide con la contraseña o con alguno de sus códigos de reserva
       const allRes = await reservationService.getAll();
       const clientRes = allRes.filter((r) => r.clientId === client.id || r.guest.toLowerCase().includes(client.firstName.toLowerCase()));
       const matchesCode = clientRes.some((r) => r.code.toLowerCase() === pass.toLowerCase());
@@ -505,13 +503,14 @@ export const reviewService = {
     }));
   },
   async create(review: any) {
+    const todayIso = new Date().toISOString().split("T")[0];
     const { data, error } = await supabase.from("reviews").insert([{
       id: `r_${Date.now()}`,
       name: review.name,
       country: review.country || "Argentina",
       comment: review.comment,
       rating: review.rating || 5,
-      date_str: new Date().toLocaleDateString("es-AR", { month: "short", year: "numeric" }),
+      date_str: todayIso,
       visible: true,
     }]).select();
     if (error) throw error;

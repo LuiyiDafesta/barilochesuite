@@ -16,11 +16,10 @@ import { Block, formatARS, property, Reservation } from "@/data/site";
 import { buildOccupancyMap, checkRangeOverlap, formatLong, nightsBetween, sameDay } from "@/lib/dates";
 import { blockService, reservationService } from "@/lib/services";
 
+// Leyenda Pública simplificada: Solo Disponible u Ocupado
 const legend = [
   { label: "Disponible", className: "bg-background border border-border" },
-  { label: "Reservado", className: "bg-primary/85" },
-  { label: "Pendiente", className: "bg-warning" },
-  { label: "Bloqueado", className: "bg-muted-foreground/40" },
+  { label: "No disponible (Ocupado)", className: "bg-primary/85 text-primary-foreground" },
 ];
 
 export function BookingSection() {
@@ -47,6 +46,17 @@ export function BookingSection() {
   const occupancy = useMemo(() => buildOccupancyMap(reservations, blocks), [reservations, blocks]);
   const nights = nightsBetween(range?.from, range?.to);
 
+  // Unificar todas las fechas ocupadas en un único array para el público
+  const allOccupiedDates = useMemo(() => {
+    return [
+      ...occupancy.reservada,
+      ...occupancy.pendiente,
+      ...occupancy.bloqueada,
+      ...occupancy.mantenimiento,
+      ...occupancy.personal,
+    ];
+  }, [occupancy]);
+
   const subtotal = nights * property.basePrice;
   const taxes = Math.round((subtotal + property.cleaningFee) * property.taxRate);
   const total = subtotal + property.cleaningFee + taxes;
@@ -54,14 +64,7 @@ export function BookingSection() {
   const isDayDisabled = (day: Date) => {
     const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
     if (isPast) return true;
-    const allTaken = [
-      ...occupancy.reservada,
-      ...occupancy.pendiente,
-      ...occupancy.bloqueada,
-      ...occupancy.mantenimiento,
-      ...occupancy.personal,
-    ];
-    return allTaken.some((d) => sameDay(d, day));
+    return allOccupiedDates.some((d) => sameDay(d, day));
   };
 
   const submit = (e: React.FormEvent) => {
@@ -76,9 +79,7 @@ export function BookingSection() {
 
     const conflict = checkRangeOverlap(fromStr, toStr, reservations, blocks);
     if (conflict.hasConflict) {
-      toast.error("Las fechas seleccionadas ya no están disponibles.", {
-        description: conflict.reason,
-      });
+      toast.error("Las fechas seleccionadas ya no están disponibles.");
       return;
     }
 
@@ -110,18 +111,10 @@ export function BookingSection() {
               onSelect={setRange}
               disabled={isDayDisabled}
               modifiers={{
-                reservada: occupancy.reservada,
-                pendiente: occupancy.pendiente,
-                bloqueada: occupancy.bloqueada,
-                mantenimiento: occupancy.mantenimiento,
-                personal: occupancy.personal,
+                ocupada: allOccupiedDates,
               }}
               modifiersClassNames={{
-                reservada: "bg-primary/85 text-primary-foreground rounded-md line-through opacity-90",
-                pendiente: "bg-warning text-warning-foreground rounded-md",
-                bloqueada: "bg-muted-foreground/30 text-muted-foreground rounded-md",
-                mantenimiento: "bg-lake/80 text-white rounded-md",
-                personal: "bg-teal/80 text-white rounded-md",
+                ocupada: "bg-primary/85 text-primary-foreground rounded-md font-medium opacity-85",
               }}
               className="w-full [--cell-size:2.4rem]"
             />
