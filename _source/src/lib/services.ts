@@ -2,6 +2,65 @@ import { supabase } from "./supabase";
 import { reservations as mockReservations, leads as mockLeads, clients as mockClients, rateRules as mockRateRules, blocks as mockBlocks } from "@/data/admin";
 import { reviews as mockReviews, places as mockPlaces } from "@/data/site";
 
+// Servicios de Ajustes de Precios y Reglas Globales
+export const settingService = {
+  async get() {
+    const { data, error } = await supabase.from("site_settings").select("*").eq("id", "default").single();
+    if (error || !data) {
+      return {
+        basePrice: 185000,
+        cleaningFee: 45000,
+        weekendSurchargePercent: 15,
+        weeklyDiscountEnabled: true,
+        weeklyDiscountPercent: 10,
+        monthlyDiscountEnabled: true,
+        monthlyDiscountPercent: 22,
+        minNightsHighSeasonEnabled: true,
+        minNightsHighSeason: 4,
+        petsAllowedEnabled: false,
+        petFeeAmount: 18000,
+        depositRequiredEnabled: true,
+        depositPercent: 30,
+      };
+    }
+    return {
+      basePrice: Number(data.base_price || 185000),
+      cleaningFee: Number(data.cleaning_fee || 45000),
+      weekendSurchargePercent: Number(data.weekend_surcharge_percent || 15),
+      weeklyDiscountEnabled: data.weekly_discount_enabled ?? true,
+      weeklyDiscountPercent: Number(data.weekly_discount_percent || 10),
+      monthlyDiscountEnabled: data.monthly_discount_enabled ?? true,
+      monthlyDiscountPercent: Number(data.monthly_discount_percent || 22),
+      minNightsHighSeasonEnabled: data.min_nights_high_season_enabled ?? true,
+      minNightsHighSeason: Number(data.min_nights_high_season || 4),
+      petsAllowedEnabled: data.pets_allowed_enabled ?? false,
+      petFeeAmount: Number(data.pet_fee_amount || 18000),
+      depositRequiredEnabled: data.deposit_required_enabled ?? true,
+      depositPercent: Number(data.deposit_percent || 30),
+    };
+  },
+  async update(settings: any) {
+    const { error } = await supabase.from("site_settings").upsert({
+      id: "default",
+      base_price: settings.basePrice,
+      cleaning_fee: settings.cleaningFee,
+      weekend_surcharge_percent: settings.weekendSurchargePercent,
+      weekly_discount_enabled: settings.weeklyDiscountEnabled,
+      weekly_discount_percent: settings.weeklyDiscountPercent,
+      monthly_discount_enabled: settings.monthlyDiscountEnabled,
+      monthly_discount_percent: settings.monthlyDiscountPercent,
+      min_nights_high_season_enabled: settings.minNightsHighSeasonEnabled,
+      min_nights_high_season: settings.minNightsHighSeason,
+      pets_allowed_enabled: settings.petsAllowedEnabled,
+      pet_fee_amount: settings.petFeeAmount,
+      deposit_required_enabled: settings.depositRequiredEnabled,
+      deposit_percent: settings.depositPercent,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throw error;
+  }
+};
+
 // Servicios de Reservas
 export const reservationService = {
   async getAll() {
