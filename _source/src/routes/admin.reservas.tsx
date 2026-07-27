@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatARS, formatDate, Reservation } from "@/data/admin";
-import { reservationService } from "@/lib/services";
+import { Block, formatARS, formatDate, Reservation } from "@/data/admin";
+import { checkRangeOverlap } from "@/lib/dates";
+import { blockService, reservationService } from "@/lib/services";
 
 export const Route = createFileRoute("/admin/reservas")({
   component: Reservas,
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/admin/reservas")({
 
 function Reservas() {
   const [items, setItems] = useState<Reservation[]>([]);
+  const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("todas");
@@ -33,8 +35,12 @@ function Reservas() {
   const loadReservations = async () => {
     try {
       setLoading(true);
-      const data = await reservationService.getAll();
-      setItems(data);
+      const [resData, blockData] = await Promise.all([
+        reservationService.getAll(),
+        blockService.getAll(),
+      ]);
+      setItems(resData);
+      setBlocks(blockData);
     } catch (e) {
       console.error("Error cargando reservas de Supabase:", e);
     } finally {
@@ -47,6 +53,20 @@ function Reservas() {
   }, []);
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
+    const targetRes = items.find((r) => r.id === id);
+    if (!targetRes) return;
+
+    // Si se intenta confirmar una reserva, validar que no se superponga con otra confirmada o un bloqueo
+    if (newStatus === "confirmada") {
+      const conflict = checkRangeOverlap(targetRes.checkIn, targetRes.checkOut, items, blocks, id);
+      if (conflict.hasConflict) {
+        toast.error("¡No se puede confirmar la reserva!", {
+          description: conflict.reason,
+        });
+        return;
+      }
+    }
+
     try {
       await reservationService.updateStatus(id, newStatus);
       setItems((prev) => prev.map((r) => (r.id === id ? { ...r, status: newStatus as any } : r)));

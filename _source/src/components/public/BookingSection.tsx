@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { CalendarDays, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -12,8 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { formatARS, property } from "@/data/site";
-import { formatLong, isDayTaken, nightsBetween, occupancyDays } from "@/lib/dates";
+import { Block, formatARS, property, Reservation } from "@/data/site";
+import { buildOccupancyMap, checkRangeOverlap, formatLong, nightsBetween, sameDay } from "@/lib/dates";
+import { blockService, reservationService } from "@/lib/services";
 
 const legend = [
   { label: "Disponible", className: "bg-background border border-border" },
@@ -24,17 +25,65 @@ const legend = [
 
 export function BookingSection() {
   const [range, setRange] = useState<DateRange | undefined>();
-  const occupancy = useMemo(() => occupancyDays(), []);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [blocks, setBlocks] = useState<Block[]>([]);
+
+  useEffect(() => {
+    const loadOccupancy = async () => {
+      try {
+        const [resData, blockData] = await Promise.all([
+          reservationService.getAll(),
+          blockService.getAll(),
+        ]);
+        setReservations(resData as any);
+        setBlocks(blockData as any);
+      } catch (e) {
+        console.error("Error al cargar ocupación pública de Supabase:", e);
+      }
+    };
+    loadOccupancy();
+  }, []);
+
+  const occupancy = useMemo(() => buildOccupancyMap(reservations, blocks), [reservations, blocks]);
   const nights = nightsBetween(range?.from, range?.to);
 
   const subtotal = nights * property.basePrice;
   const taxes = Math.round((subtotal + property.cleaningFee) * property.taxRate);
   const total = subtotal + property.cleaningFee + taxes;
 
+  const isDayDisabled = (day: Date) => {
+    const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
+    if (isPast) return true;
+    const allTaken = [
+      ...occupancy.reservada,
+      ...occupancy.pendiente,
+      ...occupancy.bloqueada,
+      ...occupancy.mantenimiento,
+      ...occupancy.personal,
+    ];
+    return allTaken.some((d) => sameDay(d, day));
+  };
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Consulta enviada", {
-      description: "Validamos la disponibilidad real y te respondemos en menos de 24 horas.",
+    if (!range?.from || !range?.to) {
+      toast.error("Por favor seleccioná las fechas de tu estadía.");
+      return;
+    }
+
+    const fromStr = range.from.toISOString().split("T")[0];
+    const toStr = range.to.toISOString().split("T")[0];
+
+    const conflict = checkRangeOverlap(fromStr, toStr, reservations, blocks);
+    if (conflict.hasConflict) {
+      toast.error("Las fechas seleccionadas ya no están disponibles.", {
+        description: conflict.reason,
+      });
+      return;
+    }
+
+    toast.success("Consulta de disponibilidad enviada", {
+      description: "Validamos tu solicitud y te respondemos por WhatsApp o email en breve.",
     });
   };
 
@@ -59,17 +108,20 @@ export function BookingSection() {
               numberOfMonths={2}
               selected={range}
               onSelect={setRange}
-              locale={undefined}
-              disabled={(day) => day < new Date(new Date().setHours(0, 0, 0, 0)) || isDayTaken(day)}
+              disabled={isDayDisabled}
               modifiers={{
                 reservada: occupancy.reservada,
                 pendiente: occupancy.pendiente,
                 bloqueada: occupancy.bloqueada,
+                mantenimiento: occupancy.mantenimiento,
+                personal: occupancy.personal,
               }}
               modifiersClassNames={{
                 reservada: "bg-primary/85 text-primary-foreground rounded-md line-through opacity-90",
                 pendiente: "bg-warning text-warning-foreground rounded-md",
                 bloqueada: "bg-muted-foreground/30 text-muted-foreground rounded-md",
+                mantenimiento: "bg-lake/80 text-white rounded-md",
+                personal: "bg-teal/80 text-white rounded-md",
               }}
               className="w-full [--cell-size:2.4rem]"
             />
@@ -186,7 +238,7 @@ export function BookingSection() {
               </div>
             )}
 
-            <Button className="mt-6 w-full rounded-full" size="lg" disabled={nights === 0} onClick={() => toast.success("Consulta enviada", { description: "Te confirmamos la disponibilidad en menos de 24 horas." })}>
+            <Button className="mt-6 w-full rounded-full" size="lg" disabled={nights === 0} onClick={submit}>
               Consultar disponibilidad
             </Button>
 

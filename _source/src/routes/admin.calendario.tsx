@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Block, BlockReason, Channel, formatARS, formatDate, Reservation, ReservationStatus } from "@/data/admin";
-import { buildOccupancyMap, formatLong, nightsBetween } from "@/lib/dates";
+import { buildOccupancyMap, checkRangeOverlap, formatLong, nightsBetween } from "@/lib/dates";
 import { blockService, reservationService } from "@/lib/services";
 
 export const Route = createFileRoute("/admin/calendario")({
@@ -101,10 +101,22 @@ function CalendarioMaestro() {
       return;
     }
 
+    const fromStr = range.from.toISOString().split("T")[0];
+    const toStr = range.to.toISOString().split("T")[0];
+
+    // Validar superposición si la reserva se intenta guardar como confirmada
+    if (reservaStatus === "confirmada") {
+      const conflict = checkRangeOverlap(fromStr, toStr, reservations, blocks);
+      if (conflict.hasConflict) {
+        toast.error("¡No se puede crear la reserva!", {
+          description: conflict.reason,
+        });
+        return;
+      }
+    }
+
     try {
       setSubmitting(true);
-      const fromStr = range.from.toISOString().split("T")[0];
-      const toStr = range.to.toISOString().split("T")[0];
 
       const newRes = await reservationService.create({
         guest: guestName,
@@ -136,10 +148,19 @@ function CalendarioMaestro() {
   const handleSaveBloqueo = async () => {
     if (!range?.from || !range?.to) return;
 
+    const fromStr = range.from.toISOString().split("T")[0];
+    const toStr = range.to.toISOString().split("T")[0];
+
+    const conflict = checkRangeOverlap(fromStr, toStr, reservations, blocks);
+    if (conflict.hasConflict) {
+      toast.error("¡No se puede aplicar el bloqueo!", {
+        description: conflict.reason,
+      });
+      return;
+    }
+
     try {
       setSubmitting(true);
-      const fromStr = range.from.toISOString().split("T")[0];
-      const toStr = range.to.toISOString().split("T")[0];
 
       const newBlock = await blockService.create({
         from: fromStr,

@@ -64,6 +64,47 @@ export const isDayTaken = (day: Date) => {
   return [...map.reservada, ...map.pendiente, ...map.bloqueada, ...map.mantenimiento, ...map.personal].some((d) => sameDay(d, day));
 };
 
+/**
+ * Valida si un rango de fechas [fromStr, toStr] se superpone con reservas existentes o bloqueos.
+ */
+export const checkRangeOverlap = (
+  fromStr: string,
+  toStr: string,
+  reservations: Reservation[],
+  blocks: Block[],
+  excludeId?: string
+) => {
+  // Verificar reservas activas (confirmadas o pendientes)
+  const conflictingRes = reservations.find((r) => {
+    if (r.id === excludeId) return false;
+    if (r.status === "cancelada") return false;
+    // Condición estricta de superposición: checkIn < toStr AND checkOut > fromStr
+    return r.checkIn < toStr && r.checkOut > fromStr;
+  });
+
+  if (conflictingRes) {
+    return {
+      hasConflict: true,
+      reason: `Las fechas seleccionadas (${fromStr} a ${toStr}) se superponen con la reserva de "${conflictingRes.guest}" (${conflictingRes.checkIn} a ${conflictingRes.checkOut}).`,
+    };
+  }
+
+  // Verificar bloqueos activos
+  const conflictingBlock = blocks.find((b) => {
+    if (b.id === excludeId) return false;
+    return b.from < toStr && b.to > fromStr;
+  });
+
+  if (conflictingBlock) {
+    return {
+      hasConflict: true,
+      reason: `Las fechas seleccionadas (${fromStr} a ${toStr}) coinciden con un bloqueo (${conflictingBlock.reason}: ${conflictingBlock.from} a ${conflictingBlock.to}).`,
+    };
+  }
+
+  return { hasConflict: false, reason: "" };
+};
+
 export const formatLong = (date?: Date) =>
   date
     ? date.toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })
