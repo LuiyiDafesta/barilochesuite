@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Menu, Mountain } from "lucide-react";
+import { KeyRound, Menu, Mountain } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -12,6 +12,7 @@ const links = [
   { to: "/galeria", label: "Galería" },
   { to: "/ubicacion", label: "Ubicación" },
   { to: "/reservar", label: "Disponibilidad" },
+  { to: "/mi-reserva", label: "Mi Reserva" },
 ];
 
 export function Navbar({ transparent = false }: { transparent?: boolean }) {
@@ -73,17 +74,32 @@ export function Navbar({ transparent = false }: { transparent?: boolean }) {
               key={l.to}
               to={l.to}
               className={cn(
-                "rounded-full px-4 py-2 text-sm transition-colors",
+                "rounded-full px-4 py-2 text-sm transition-colors flex items-center gap-1.5",
                 solid ? "text-muted-foreground hover:text-foreground" : "text-white/80 hover:text-white",
                 pathname === l.to && (solid ? "text-foreground" : "text-white"),
               )}
             >
+              {l.to === "/mi-reserva" && <KeyRound className="h-3.5 w-3.5 text-teal" />}
               {l.label}
             </Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-2 justify-self-end">
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className={cn(
+              "hidden rounded-full px-4 text-xs md:inline-flex",
+              solid ? "" : "border-white/40 bg-white/10 text-white hover:bg-white/20",
+            )}
+          >
+            <Link to="/mi-reserva">
+              <KeyRound className="mr-1.5 h-3.5 w-3.5" /> Mi Reserva
+            </Link>
+          </Button>
+
           <Button
             asChild
             size="sm"
@@ -114,8 +130,9 @@ export function Navbar({ transparent = false }: { transparent?: boolean }) {
                     key={l.to}
                     to={l.to}
                     onClick={() => setOpen(false)}
-                    className="rounded-xl px-4 py-3 text-base text-foreground transition-colors hover:bg-muted"
+                    className="flex items-center gap-2 rounded-xl px-4 py-3 text-base text-foreground transition-colors hover:bg-muted"
                   >
+                    {l.to === "/mi-reserva" && <KeyRound className="h-4 w-4 text-teal" />}
                     {l.label}
                   </Link>
                 ))}

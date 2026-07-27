@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Instagram, Facebook, MessageCircle, Mail, MapPin, Mountain } from "lucide-react";
+import { Instagram, Facebook, MessageCircle, Mail, MapPin, Mountain, KeyRound } from "lucide-react";
 
 import { property } from "@/data/site";
 import { Separator } from "@/components/ui/separator";
@@ -42,6 +42,11 @@ export function Footer() {
               <li>
                 <Link to="/reservar" className="text-foreground/80 transition-colors hover:text-foreground">
                   Disponibilidad
+                </Link>
+              </li>
+              <li>
+                <Link to="/mi-reserva" className="text-teal font-medium transition-colors hover:text-teal/80 flex items-center gap-1.5">
+                  <KeyRound className="h-3.5 w-3.5" /> Portal del Huésped (Mi Reserva)
                 </Link>
               </li>
             </ul>
@@ -88,8 +93,8 @@ export function Footer() {
           <p>© {new Date().getFullYear()} {property.name}. Todos los derechos reservados.</p>
           <div className="flex gap-5">
             <span>Políticas de cancelación</span>
-            <Link to="/admin" className="transition-colors hover:text-foreground">
-              Panel del anfitrión
+            <Link to="/admin/login" className="transition-colors hover:text-foreground font-medium">
+              Panel del anfitrión (Admin)
             </Link>
           </div>
         </div>
