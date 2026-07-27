@@ -110,6 +110,34 @@ export const reservationService = {
       note: r.note,
     };
   },
+  async update(id: string, reservation: any) {
+    const { data, error } = await supabase.from("reservations").update({
+      guest: reservation.guest,
+      client_id: reservation.clientId || null,
+      check_in: reservation.checkIn,
+      check_out: reservation.checkOut,
+      guests: reservation.guests,
+      amount: reservation.amount,
+      status: reservation.status,
+      channel: reservation.channel,
+      note: reservation.note,
+    }).eq("id", id).select();
+    if (error) throw error;
+    const r = data[0];
+    return {
+      id: r.id,
+      code: r.code,
+      guest: r.guest,
+      clientId: r.client_id || "",
+      checkIn: r.check_in,
+      checkOut: r.check_out,
+      guests: r.guests,
+      amount: Number(r.amount),
+      status: r.status,
+      channel: r.channel,
+      note: r.note,
+    };
+  },
   async updateStatus(id: string, status: string) {
     const { error } = await supabase.from("reservations").update({ status }).eq("id", id);
     if (error) throw error;

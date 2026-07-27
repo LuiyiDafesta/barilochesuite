@@ -105,6 +105,52 @@ export const checkRangeOverlap = (
   return { hasConflict: false, reason: "" };
 };
 
+/**
+ * Recalcula automáticamente el precio estimado en función de las noches, las reglas por temporada y los descuentos activos.
+ */
+export const calculateEstimatedPrice = (
+  checkInStr: string,
+  checkOutStr: string,
+  rateRules: any[] = [],
+  settings: any = {}
+) => {
+  if (!checkInStr || !checkOutStr) return { nights: 0, amount: 0 };
+  const dFrom = toDate(checkInStr);
+  const dTo = toDate(checkOutStr);
+  const nights = nightsBetween(dFrom, dTo);
+  if (nights <= 0) return { nights: 0, amount: 0 };
+
+  const basePrice = settings.basePrice || 185000;
+  const weekendSurcharge = (settings.weekendSurchargePercent || 15) / 100;
+  let totalSubtotal = 0;
+
+  const dates = eachDay(dFrom, new Date(dTo.getTime() - 86400000));
+  dates.forEach((d) => {
+    const dStr = d.toISOString().split("T")[0];
+    const isWeekend = d.getDay() === 5 || d.getDay() === 6;
+
+    // Buscar regla de temporada que cubra este día
+    const matchingRule = rateRules.find((r) => r.from <= dStr && r.to >= dStr);
+    if (matchingRule && matchingRule.price) {
+      totalSubtotal += Number(matchingRule.price);
+    } else {
+      totalSubtotal += isWeekend ? Math.round(basePrice * (1 + weekendSurcharge)) : basePrice;
+    }
+  });
+
+  // Aplicar descuentos por estadía si corresponden
+  if (nights >= 28 && settings.monthlyDiscountEnabled) {
+    totalSubtotal *= (1 - (settings.monthlyDiscountPercent || 22) / 100);
+  } else if (nights >= 7 && settings.weeklyDiscountEnabled) {
+    totalSubtotal *= (1 - (settings.weeklyDiscountPercent || 10) / 100);
+  }
+
+  return {
+    nights,
+    amount: Math.round(totalSubtotal),
+  };
+};
+
 export const formatLong = (date?: Date) =>
   date
     ? date.toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" })
