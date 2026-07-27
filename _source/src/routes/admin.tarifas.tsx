@@ -12,6 +12,15 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatARS, formatDate, RateRule } from "@/data/admin";
 import { rateService } from "@/lib/services";
 
@@ -25,6 +34,17 @@ function Tarifas() {
   const [cleaning, setCleaning] = useState(45000);
   const [rules, setRules] = useState<RateRule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openModal, setOpenModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Formulario Nueva Regla / Temporada
+  const [ruleName, setRuleName] = useState("");
+  const [ruleType, setRuleType] = useState("Temporada Alta");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [rulePrice, setRulePrice] = useState("");
+  const [minNights, setMinNights] = useState(3);
+  const [ruleColor, setRuleColor] = useState("#0d9488");
 
   const loadRates = async () => {
     try {
@@ -41,6 +61,39 @@ function Tarifas() {
   useEffect(() => {
     loadRates();
   }, []);
+
+  const handleCreateRule = async () => {
+    if (!ruleName || !fromDate || !toDate || !rulePrice) {
+      toast.error("Por favor completa el nombre, fechas y precio por noche.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const newRule = await rateService.create({
+        name: ruleName,
+        type: ruleType,
+        from: fromDate,
+        to: toDate,
+        price: Number(rulePrice.replace(/[^0-9]/g, "")) || 0,
+        minNights,
+        color: ruleColor,
+        priority: 1,
+      });
+
+      setRules((prev) => [...prev, newRule]);
+      toast.success("Regla de tarifa creada en Supabase", { description: ruleName });
+      setOpenModal(false);
+      setRuleName("");
+      setFromDate("");
+      setToDate("");
+      setRulePrice("");
+    } catch (e: any) {
+      toast.error(e.message || "Error al crear la regla de tarifa");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -117,7 +170,7 @@ function Tarifas() {
       <Card className="border-border/70 shadow-soft">
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="font-display text-base">Tarifas por temporada</CardTitle>
-          <Button size="sm" variant="outline" className="rounded-full" onClick={() => toast("Nueva regla de tarifa")}>
+          <Button size="sm" variant="outline" className="rounded-full" onClick={() => setOpenModal(true)}>
             <Plus className="mr-1.5 h-3.5 w-3.5" /> Agregar regla
           </Button>
         </CardHeader>
@@ -164,9 +217,12 @@ function Tarifas() {
                         variant="ghost"
                         size="icon"
                         aria-label="Eliminar regla"
-                        onClick={() => toast("Regla eliminada")}
+                        onClick={() => {
+                          setRules((prev) => prev.filter((item) => item.id !== r.id));
+                          toast.success("Regla eliminada de la vista");
+                        }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -176,6 +232,101 @@ function Tarifas() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal Nueva Regla / Temporada */}
+      <Dialog open={openModal} onOpenChange={setOpenModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Nueva Regla de Tarifa</DialogTitle>
+            <DialogDescription>
+              Configurá un precio o mínimo de noches especial para un rango de fechas.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="ruleName">Nombre de la Regla / Temporada *</Label>
+              <Input
+                id="ruleName"
+                placeholder="Ej: Invierno Esquí - Nieve Peak"
+                value={ruleName}
+                onChange={(e) => setRuleName(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo de Temporada</Label>
+              <Select value={ruleType} onValueChange={setRuleType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Temporada Alta">Temporada Alta</SelectItem>
+                  <SelectItem value="Temporada Media">Temporada Media</SelectItem>
+                  <SelectItem value="Temporada Baja">Temporada Baja</SelectItem>
+                  <SelectItem value="Evento / Feriado">Evento / Feriado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="fromDate">Desde (Fecha) *</Label>
+                <Input
+                  id="fromDate"
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="toDate">Hasta (Fecha) *</Label>
+                <Input
+                  id="toDate"
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="rulePrice">Precio por Noche (ARS) *</Label>
+                <Input
+                  id="rulePrice"
+                  placeholder="240000"
+                  value={rulePrice}
+                  onChange={(e) => setRulePrice(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="minNights">Mínimo de Noches</Label>
+                <Input
+                  id="minNights"
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={minNights}
+                  onChange={(e) => setMinNights(Number(e.target.value))}
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOpenModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateRule} disabled={submitting}>
+              {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+              Guardar en Supabase
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
