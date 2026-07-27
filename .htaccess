@@ -1,6 +1,7 @@
+DirectoryIndex index.html index.php
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /
 
   # Permitir acceso directo a scripts PHP (upload.php, contact.php, etc)
   RewriteCond %{REQUEST_FILENAME} -f
@@ -12,7 +13,7 @@
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Redirigir todas las demás rutas dinámicas a index.html para la SPA
+  # Redirigir todas las demás rutas dinámicas a index.html en el directorio actual
   RewriteRule ^ index.html [L]
 </IfModule>
 
