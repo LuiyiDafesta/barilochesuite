@@ -93,18 +93,18 @@ function AdminLayout() {
             <Breadcrumb className="hidden min-w-0 sm:block">
               <BreadcrumbList>
                 {segments.map((seg, i) => (
-                  <BreadcrumbItem key={seg}>
-                    {i === segments.length - 1 ? (
-                      <BreadcrumbPage className="truncate">{labels[seg] ?? seg}</BreadcrumbPage>
-                    ) : (
-                      <>
+                  <Fragment key={seg}>
+                    <BreadcrumbItem>
+                      {i === segments.length - 1 ? (
+                        <BreadcrumbPage className="truncate">{labels[seg] ?? seg}</BreadcrumbPage>
+                      ) : (
                         <BreadcrumbLink href={`/${segments.slice(0, i + 1).join("/")}`}>
                           {labels[seg] ?? seg}
                         </BreadcrumbLink>
-                        <BreadcrumbSeparator />
-                      </>
-                    )}
-                  </BreadcrumbItem>
+                      )}
+                    </BreadcrumbItem>
+                    {i < segments.length - 1 && <BreadcrumbSeparator />}
+                  </Fragment>
                 ))}
               </BreadcrumbList>
             </Breadcrumb>
