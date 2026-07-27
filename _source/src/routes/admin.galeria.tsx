@@ -7,7 +7,6 @@ import { PageHeader } from "@/components/admin/ui-bits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { gallery as initialGallery, galleryCategories, GalleryCategory, MediaItem } from "@/data/site";
@@ -74,16 +73,25 @@ function GaleriaAdmin() {
     const toastId = toast.loading("Subiendo a Backblaze B2...");
 
     try {
-      // Subir mediante el proxy PHP de la raíz
-      const response = await fetch("/upload.php", {
+      // Calcular URL de upload.php relativa a la carpeta raíz de la aplicación (/barilochesuite/upload.php)
+      const uploadUrl = window.location.origin + window.location.pathname.replace(/\/admin\/?.*$/, "") + "/upload.php";
+      
+      const response = await fetch(uploadUrl, {
         method: "POST",
         body: formData,
       });
 
-      const result = await response.json();
+      const text = await response.text();
+      let result: any;
+      try {
+        result = JSON.parse(text);
+      } catch (parseError) {
+        console.error("Respuesta no-JSON recibida de upload.php:", text);
+        throw new Error("El servidor devolvió una respuesta no válida. Verifica que upload.php esté subido en la raíz.");
+      }
 
       if (!response.ok || result.status !== "success") {
-        throw new Error(result.message || "Error al subir el archivo");
+        throw new Error(result.message || "Error al subir el archivo a Backblaze B2");
       }
 
       const isVideo = file.type.startsWith("video/");

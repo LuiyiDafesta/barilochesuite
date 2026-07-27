@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import type { DateRange } from "react-day-picker";
 import { Ban, Loader2, Trash2 } from "lucide-react";
@@ -12,9 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Block, BlockReason, formatDate } from "@/data/admin";
-import { formatLong, nightsBetween } from "@/lib/dates";
-import { blockService } from "@/lib/services";
+import { Block, BlockReason, formatDate, Reservation } from "@/data/admin";
+import { buildOccupancyMap, formatLong, nightsBetween } from "@/lib/dates";
+import { blockService, reservationService } from "@/lib/services";
 
 export const Route = createFileRoute("/admin/bloqueos")({
   component: Bloqueos,
@@ -22,6 +22,7 @@ export const Route = createFileRoute("/admin/bloqueos")({
 
 function Bloqueos() {
   const [items, setItems] = useState<Block[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [range, setRange] = useState<DateRange | undefined>();
@@ -30,11 +31,15 @@ function Bloqueos() {
 
   const nights = nightsBetween(range?.from, range?.to);
 
-  const loadBlocks = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await blockService.getAll();
-      setItems(data);
+      const [blockData, resData] = await Promise.all([
+        blockService.getAll(),
+        reservationService.getAll(),
+      ]);
+      setItems(blockData);
+      setReservations(resData);
     } catch (e) {
       console.error("Error cargando bloqueos de Supabase:", e);
     } finally {
@@ -43,8 +48,10 @@ function Bloqueos() {
   };
 
   useEffect(() => {
-    loadBlocks();
+    loadData();
   }, []);
+
+  const occupancy = useMemo(() => buildOccupancyMap(reservations, items), [reservations, items]);
 
   const handleCreateBlock = async () => {
     if (!range?.from || !range?.to) return;
@@ -98,6 +105,14 @@ function Bloqueos() {
               mode="range"
               selected={range}
               onSelect={setRange}
+              modifiers={occupancy}
+              modifiersClassNames={{
+                reservada: "bg-primary/85 text-primary-foreground rounded-md",
+                pendiente: "bg-warning text-warning-foreground rounded-md",
+                bloqueada: "bg-muted-foreground/50 text-white rounded-md",
+                mantenimiento: "bg-lake/80 text-white rounded-md",
+                personal: "bg-teal/80 text-white rounded-md",
+              }}
               className="mx-auto [--cell-size:2.1rem]"
             />
             <div className="space-y-2">
@@ -132,7 +147,7 @@ function Bloqueos() {
               ) : (
                 <Ban className="mr-1.5 h-3.5 w-3.5" />
               )}
-              {nights > 0 ? `Bloquear ${nights} noches` : "Seleccioná un rango"}
+              {nights > 0 ? `Bloquear ${nights} noches` : "Seleccioná un rango en el calendario"}
             </Button>
           </CardContent>
         </Card>

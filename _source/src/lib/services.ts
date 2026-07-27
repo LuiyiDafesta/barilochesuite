@@ -216,6 +216,10 @@ export const rateService = {
       color: r.color,
       priority: r.priority,
     };
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from("rate_rules").delete().eq("id", id);
+    if (error) throw error;
   }
 };
 
@@ -292,8 +296,34 @@ export const placeService = {
       visible: p.visible,
     }));
   },
+  async create(place: any) {
+    const { data, error } = await supabase.from("places").insert([{
+      id: place.id || `p_${Date.now()}`,
+      name: place.name,
+      category: place.category || "Centro",
+      distance: place.distance || "",
+      description: place.description || "",
+      image: place.image || "",
+      visible: place.visible !== undefined ? place.visible : true,
+    }]).select();
+    if (error) throw error;
+    const p = data[0];
+    return {
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      distance: p.distance,
+      description: p.description,
+      image: p.image || "",
+      visible: p.visible,
+    };
+  },
   async toggleVisibility(id: string, visible: boolean) {
     const { error } = await supabase.from("places").update({ visible }).eq("id", id);
+    if (error) throw error;
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from("places").delete().eq("id", id);
     if (error) throw error;
   }
 };
