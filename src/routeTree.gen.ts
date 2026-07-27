@@ -18,7 +18,12 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminTemporadasRouteImport } from './routes/admin.temporadas'
 import { Route as AdminTarifasRouteImport } from './routes/admin.tarifas'
 import { Route as AdminReservasRouteImport } from './routes/admin.reservas'
+import { Route as AdminResenasRouteImport } from './routes/admin.resenas'
+import { Route as AdminLugaresRouteImport } from './routes/admin.lugares'
+import { Route as AdminGaleriaRouteImport } from './routes/admin.galeria'
+import { Route as AdminContenidoRouteImport } from './routes/admin.contenido'
 import { Route as AdminConsultasRouteImport } from './routes/admin.consultas'
+import { Route as AdminConfiguracionRouteImport } from './routes/admin.configuracion'
 import { Route as AdminCalendarioRouteImport } from './routes/admin.calendario'
 import { Route as AdminBloqueosRouteImport } from './routes/admin.bloqueos'
 import { Route as AdminClientesIndexRouteImport } from './routes/admin.clientes.index'
@@ -69,9 +74,34 @@ const AdminReservasRoute = AdminReservasRouteImport.update({
   path: '/reservas',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminResenasRoute = AdminResenasRouteImport.update({
+  id: '/resenas',
+  path: '/resenas',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLugaresRoute = AdminLugaresRouteImport.update({
+  id: '/lugares',
+  path: '/lugares',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGaleriaRoute = AdminGaleriaRouteImport.update({
+  id: '/galeria',
+  path: '/galeria',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminContenidoRoute = AdminContenidoRouteImport.update({
+  id: '/contenido',
+  path: '/contenido',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminConsultasRoute = AdminConsultasRouteImport.update({
   id: '/consultas',
   path: '/consultas',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminConfiguracionRoute = AdminConfiguracionRouteImport.update({
+  id: '/configuracion',
+  path: '/configuracion',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCalendarioRoute = AdminCalendarioRouteImport.update({
@@ -103,7 +133,12 @@ export interface FileRoutesByFullPath {
   '/ubicacion': typeof UbicacionRoute
   '/admin/bloqueos': typeof AdminBloqueosRoute
   '/admin/calendario': typeof AdminCalendarioRoute
+  '/admin/configuracion': typeof AdminConfiguracionRoute
   '/admin/consultas': typeof AdminConsultasRoute
+  '/admin/contenido': typeof AdminContenidoRoute
+  '/admin/galeria': typeof AdminGaleriaRoute
+  '/admin/lugares': typeof AdminLugaresRoute
+  '/admin/resenas': typeof AdminResenasRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/admin/tarifas': typeof AdminTarifasRoute
   '/admin/temporadas': typeof AdminTemporadasRoute
@@ -118,7 +153,12 @@ export interface FileRoutesByTo {
   '/ubicacion': typeof UbicacionRoute
   '/admin/bloqueos': typeof AdminBloqueosRoute
   '/admin/calendario': typeof AdminCalendarioRoute
+  '/admin/configuracion': typeof AdminConfiguracionRoute
   '/admin/consultas': typeof AdminConsultasRoute
+  '/admin/contenido': typeof AdminContenidoRoute
+  '/admin/galeria': typeof AdminGaleriaRoute
+  '/admin/lugares': typeof AdminLugaresRoute
+  '/admin/resenas': typeof AdminResenasRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/admin/tarifas': typeof AdminTarifasRoute
   '/admin/temporadas': typeof AdminTemporadasRoute
@@ -135,7 +175,12 @@ export interface FileRoutesById {
   '/ubicacion': typeof UbicacionRoute
   '/admin/bloqueos': typeof AdminBloqueosRoute
   '/admin/calendario': typeof AdminCalendarioRoute
+  '/admin/configuracion': typeof AdminConfiguracionRoute
   '/admin/consultas': typeof AdminConsultasRoute
+  '/admin/contenido': typeof AdminContenidoRoute
+  '/admin/galeria': typeof AdminGaleriaRoute
+  '/admin/lugares': typeof AdminLugaresRoute
+  '/admin/resenas': typeof AdminResenasRoute
   '/admin/reservas': typeof AdminReservasRoute
   '/admin/tarifas': typeof AdminTarifasRoute
   '/admin/temporadas': typeof AdminTemporadasRoute
@@ -153,7 +198,12 @@ export interface FileRouteTypes {
     | '/ubicacion'
     | '/admin/bloqueos'
     | '/admin/calendario'
+    | '/admin/configuracion'
     | '/admin/consultas'
+    | '/admin/contenido'
+    | '/admin/galeria'
+    | '/admin/lugares'
+    | '/admin/resenas'
     | '/admin/reservas'
     | '/admin/tarifas'
     | '/admin/temporadas'
@@ -168,7 +218,12 @@ export interface FileRouteTypes {
     | '/ubicacion'
     | '/admin/bloqueos'
     | '/admin/calendario'
+    | '/admin/configuracion'
     | '/admin/consultas'
+    | '/admin/contenido'
+    | '/admin/galeria'
+    | '/admin/lugares'
+    | '/admin/resenas'
     | '/admin/reservas'
     | '/admin/tarifas'
     | '/admin/temporadas'
@@ -184,7 +239,12 @@ export interface FileRouteTypes {
     | '/ubicacion'
     | '/admin/bloqueos'
     | '/admin/calendario'
+    | '/admin/configuracion'
     | '/admin/consultas'
+    | '/admin/contenido'
+    | '/admin/galeria'
+    | '/admin/lugares'
+    | '/admin/resenas'
     | '/admin/reservas'
     | '/admin/tarifas'
     | '/admin/temporadas'
@@ -266,11 +326,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReservasRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/resenas': {
+      id: '/admin/resenas'
+      path: '/resenas'
+      fullPath: '/admin/resenas'
+      preLoaderRoute: typeof AdminResenasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/lugares': {
+      id: '/admin/lugares'
+      path: '/lugares'
+      fullPath: '/admin/lugares'
+      preLoaderRoute: typeof AdminLugaresRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/galeria': {
+      id: '/admin/galeria'
+      path: '/galeria'
+      fullPath: '/admin/galeria'
+      preLoaderRoute: typeof AdminGaleriaRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/contenido': {
+      id: '/admin/contenido'
+      path: '/contenido'
+      fullPath: '/admin/contenido'
+      preLoaderRoute: typeof AdminContenidoRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/consultas': {
       id: '/admin/consultas'
       path: '/consultas'
       fullPath: '/admin/consultas'
       preLoaderRoute: typeof AdminConsultasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/configuracion': {
+      id: '/admin/configuracion'
+      path: '/configuracion'
+      fullPath: '/admin/configuracion'
+      preLoaderRoute: typeof AdminConfiguracionRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/calendario': {
@@ -307,7 +402,12 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminBloqueosRoute: typeof AdminBloqueosRoute
   AdminCalendarioRoute: typeof AdminCalendarioRoute
+  AdminConfiguracionRoute: typeof AdminConfiguracionRoute
   AdminConsultasRoute: typeof AdminConsultasRoute
+  AdminContenidoRoute: typeof AdminContenidoRoute
+  AdminGaleriaRoute: typeof AdminGaleriaRoute
+  AdminLugaresRoute: typeof AdminLugaresRoute
+  AdminResenasRoute: typeof AdminResenasRoute
   AdminReservasRoute: typeof AdminReservasRoute
   AdminTarifasRoute: typeof AdminTarifasRoute
   AdminTemporadasRoute: typeof AdminTemporadasRoute
@@ -319,7 +419,12 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBloqueosRoute: AdminBloqueosRoute,
   AdminCalendarioRoute: AdminCalendarioRoute,
+  AdminConfiguracionRoute: AdminConfiguracionRoute,
   AdminConsultasRoute: AdminConsultasRoute,
+  AdminContenidoRoute: AdminContenidoRoute,
+  AdminGaleriaRoute: AdminGaleriaRoute,
+  AdminLugaresRoute: AdminLugaresRoute,
+  AdminResenasRoute: AdminResenasRoute,
   AdminReservasRoute: AdminReservasRoute,
   AdminTarifasRoute: AdminTarifasRoute,
   AdminTemporadasRoute: AdminTemporadasRoute,
