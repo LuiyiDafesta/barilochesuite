@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Grid2x2, LayoutGrid, Play, RotateCcw, ZoomIn } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { gallery, galleryCategories, type MediaItem } from "@/data/site";
+import { gallery as initialGallery, galleryCategories, type MediaItem } from "@/data/site";
+import { supabase } from "@/lib/supabase";
 
 const typeBadge: Record<MediaItem["type"], string | null> = {
   foto: null,
@@ -20,10 +21,39 @@ export function GalleryExplorer({ compact = false }: { compact?: boolean }) {
   const [view, setView] = useState<"grid" | "masonry">("masonry");
   const [index, setIndex] = useState<number | null>(null);
   const [zoom, setZoom] = useState(false);
+  const [galleryItems, setGalleryItems] = useState<MediaItem[]>(initialGallery);
+
+  useEffect(() => {
+    const loadSupabaseGallery = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("gallery_media")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          setGalleryItems(
+            data.map((item) => ({
+              id: item.id,
+              src: item.src,
+              title: item.title,
+              category: item.category as any,
+              type: item.type as any,
+              ratio: item.ratio as any,
+              featured: item.featured,
+            }))
+          );
+        }
+      } catch (e) {
+        console.error("Error cargando galería pública:", e);
+      }
+    };
+    loadSupabaseGallery();
+  }, []);
 
   const items = useMemo(
-    () => (filter === "todas" ? gallery : gallery.filter((g) => g.category === filter)),
-    [filter],
+    () => (filter === "todas" ? galleryItems : galleryItems.filter((g) => g.category === filter)),
+    [filter, galleryItems],
   );
   const visible = compact ? items.slice(0, 6) : items;
   const current = index !== null ? visible[index] : null;
@@ -104,15 +134,19 @@ export function GalleryExplorer({ compact = false }: { compact?: boolean }) {
           <DialogTitle className="sr-only">{current?.title ?? "Galería"}</DialogTitle>
           {current && (
             <div className="relative flex h-[92vh] w-full items-center justify-center">
-              <img
-                src={current.src}
-                alt={current.title}
-                className={cn(
-                  "max-h-full max-w-full object-contain transition-transform duration-500",
-                  zoom && "scale-150 cursor-zoom-out",
-                )}
-                onClick={() => setZoom((z) => !z)}
-              />
+              {current.type === "video" || current.type === "video-vertical" ? (
+                <video src={current.src} controls autoPlay className="max-h-full max-w-full object-contain" />
+              ) : (
+                <img
+                  src={current.src}
+                  alt={current.title}
+                  className={cn(
+                    "max-h-full max-w-full object-contain transition-transform duration-500",
+                    zoom && "scale-150 cursor-zoom-out",
+                  )}
+                  onClick={() => setZoom((z) => !z)}
+                />
+              )}
 
               <button
                 onClick={() => setZoom((z) => !z)}
@@ -176,12 +210,16 @@ function Tile({ item, onClick, masonry }: { item: MediaItem; onClick: () => void
         aspect,
       )}
     >
-      <img
-        src={item.src}
-        alt={item.title}
-        loading="lazy"
-        className="h-full w-full rounded-2xl object-cover"
-      />
+      {item.type === "video" || item.type === "video-vertical" ? (
+        <video src={item.src} className="h-full w-full rounded-2xl object-cover" />
+      ) : (
+        <img
+          src={item.src}
+          alt={item.title}
+          loading="lazy"
+          className="h-full w-full rounded-2xl object-cover"
+        />
+      )}
       <span className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-t from-primary/70 via-primary/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
       {badge && (
         <Badge className="absolute left-3 top-3 gap-1 bg-background/90 text-foreground backdrop-blur">
