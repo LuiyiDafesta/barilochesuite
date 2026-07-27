@@ -552,9 +552,15 @@ export const formatARS = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-export const formatDate = (iso: string) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString("es-AR", {
+export const formatDate = (iso?: string) => {
+  if (!iso || iso === "undefined" || iso === "null") return "—";
+  const dateStr = iso.includes("T") ? iso : `${iso}T12:00:00`;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("es-AR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
+};
+

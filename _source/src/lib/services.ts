@@ -36,7 +36,20 @@ export const reservationService = {
       note: reservation.note || "",
     }]).select();
     if (error) throw error;
-    return data[0];
+    const r = data[0];
+    return {
+      id: r.id,
+      code: r.code,
+      guest: r.guest,
+      clientId: r.client_id || "",
+      checkIn: r.check_in,
+      checkOut: r.check_out,
+      guests: r.guests,
+      amount: Number(r.amount),
+      status: r.status,
+      channel: r.channel,
+      note: r.note,
+    };
   },
   async updateStatus(id: string, status: string) {
     const { error } = await supabase.from("reservations").update({ status }).eq("id", id);
@@ -90,7 +103,23 @@ export const leadService = {
       message: lead.message || "",
     }]).select();
     if (error) throw error;
-    return data[0];
+    const l = data[0];
+    return {
+      id: l.id,
+      clientId: l.client_id || "",
+      name: l.name,
+      country: l.country,
+      checkIn: l.check_in,
+      checkOut: l.check_out,
+      nights: l.nights,
+      adults: l.adults,
+      children: l.children,
+      pets: l.pets,
+      amount: Number(l.amount),
+      stage: l.stage,
+      createdAt: l.created_at ? l.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
+      message: l.message || "",
+    };
   }
 };
 
@@ -128,7 +157,20 @@ export const clientService = {
       total_spent: client.totalSpent || 0,
     }]).select();
     if (error) throw error;
-    return data[0];
+    const c = data[0];
+    return {
+      id: c.id,
+      firstName: c.first_name,
+      lastName: c.last_name,
+      email: c.email,
+      whatsapp: c.whatsapp || "",
+      city: c.city || "",
+      country: c.country || "",
+      language: c.language || "Español",
+      notes: c.notes || "",
+      stays: c.stays || 0,
+      totalSpent: Number(c.total_spent || 0),
+    };
   }
 };
 
@@ -162,7 +204,18 @@ export const rateService = {
       priority: rule.priority || 1,
     }]).select();
     if (error) throw error;
-    return data[0];
+    const r = data[0];
+    return {
+      id: r.id,
+      name: r.name,
+      type: r.type,
+      from: r.from_date,
+      to: r.to_date,
+      price: Number(r.price),
+      minNights: r.min_nights,
+      color: r.color,
+      priority: r.priority,
+    };
   }
 };
 
@@ -188,7 +241,14 @@ export const blockService = {
       note: block.note || "",
     }]).select();
     if (error) throw error;
-    return data[0];
+    const b = data[0];
+    return {
+      id: b.id,
+      from: b.from_date,
+      to: b.to_date,
+      reason: b.reason,
+      note: b.note || "",
+    };
   },
   async delete(id: string) {
     const { error } = await supabase.from("blocks").delete().eq("id", id);
