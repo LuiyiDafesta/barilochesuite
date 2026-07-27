@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { clients, formatARS } from "@/data/admin";
 
-export const Route = createFileRoute("/admin/clientes")({
+export const Route = createFileRoute("/admin/clientes/")({
   component: Clientes,
 });
 
