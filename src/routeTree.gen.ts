@@ -15,6 +15,8 @@ import { Route as GaleriaRouteImport } from './routes/galeria'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminReservasRouteImport } from './routes/admin.reservas'
+import { Route as AdminConsultasRouteImport } from './routes/admin.consultas'
 import { Route as AdminCalendarioRouteImport } from './routes/admin.calendario'
 
 const UbicacionRoute = UbicacionRouteImport.update({
@@ -47,6 +49,16 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminReservasRoute = AdminReservasRouteImport.update({
+  id: '/reservas',
+  path: '/reservas',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminConsultasRoute = AdminConsultasRouteImport.update({
+  id: '/consultas',
+  path: '/consultas',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCalendarioRoute = AdminCalendarioRouteImport.update({
   id: '/calendario',
   path: '/calendario',
@@ -60,6 +72,8 @@ export interface FileRoutesByFullPath {
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
   '/admin/calendario': typeof AdminCalendarioRoute
+  '/admin/consultas': typeof AdminConsultasRoute
+  '/admin/reservas': typeof AdminReservasRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -68,6 +82,8 @@ export interface FileRoutesByTo {
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
   '/admin/calendario': typeof AdminCalendarioRoute
+  '/admin/consultas': typeof AdminConsultasRoute
+  '/admin/reservas': typeof AdminReservasRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -78,6 +94,8 @@ export interface FileRoutesById {
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
   '/admin/calendario': typeof AdminCalendarioRoute
+  '/admin/consultas': typeof AdminConsultasRoute
+  '/admin/reservas': typeof AdminReservasRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -89,6 +107,8 @@ export interface FileRouteTypes {
     | '/reservar'
     | '/ubicacion'
     | '/admin/calendario'
+    | '/admin/consultas'
+    | '/admin/reservas'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -97,6 +117,8 @@ export interface FileRouteTypes {
     | '/reservar'
     | '/ubicacion'
     | '/admin/calendario'
+    | '/admin/consultas'
+    | '/admin/reservas'
     | '/admin'
   id:
     | '__root__'
@@ -106,6 +128,8 @@ export interface FileRouteTypes {
     | '/reservar'
     | '/ubicacion'
     | '/admin/calendario'
+    | '/admin/consultas'
+    | '/admin/reservas'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -161,6 +185,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/reservas': {
+      id: '/admin/reservas'
+      path: '/reservas'
+      fullPath: '/admin/reservas'
+      preLoaderRoute: typeof AdminReservasRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/consultas': {
+      id: '/admin/consultas'
+      path: '/consultas'
+      fullPath: '/admin/consultas'
+      preLoaderRoute: typeof AdminConsultasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/calendario': {
       id: '/admin/calendario'
       path: '/calendario'
@@ -173,11 +211,15 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminCalendarioRoute: typeof AdminCalendarioRoute
+  AdminConsultasRoute: typeof AdminConsultasRoute
+  AdminReservasRoute: typeof AdminReservasRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminCalendarioRoute: AdminCalendarioRoute,
+  AdminConsultasRoute: AdminConsultasRoute,
+  AdminReservasRoute: AdminReservasRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
