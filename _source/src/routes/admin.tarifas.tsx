@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatARS, formatDate, RateRule } from "@/data/admin";
-import { rateService, settingService } from "@/lib/services";
+import { propertyService, rateService, settingService } from "@/lib/services";
 
 export const Route = createFileRoute("/admin/tarifas")({
   component: Tarifas,
@@ -70,13 +70,21 @@ function Tarifas() {
   const loadAllData = async () => {
     try {
       setLoading(true);
-      const [settings, rates] = await Promise.all([
+      const activeProp = localStorage.getItem("active_property_id") || "todas";
+
+      const [settings, rates, properties] = await Promise.all([
         settingService.get(),
-        rateService.getAll(),
+        rateService.getAll(activeProp),
+        propertyService.getAll(),
       ]);
 
-      // Cargar configuraciones de precios
-      setBasePrice(settings.basePrice);
+      const currentProp = properties.find((p) => p.id === activeProp) || properties[0];
+      if (currentProp && currentProp.basePrice) {
+        setBasePrice(currentProp.basePrice);
+      } else {
+        setBasePrice(settings.basePrice);
+      }
+
       setCleaningFee(settings.cleaningFee);
       setWeekendPercent([settings.weekendSurchargePercent]);
       setWeeklyEnabled(settings.weeklyDiscountEnabled);
@@ -90,7 +98,6 @@ function Tarifas() {
       setDepositEnabled(settings.depositRequiredEnabled);
       setDepositPercent(settings.depositPercent);
 
-      // Cargar tarifas por temporada
       setRules(rates);
     } catch (e) {
       console.error("Error cargando configuración de tarifas:", e);
@@ -101,11 +108,21 @@ function Tarifas() {
 
   useEffect(() => {
     loadAllData();
+    const handlePropChange = () => loadAllData();
+    window.addEventListener("property_changed", handlePropChange);
+    return () => window.removeEventListener("property_changed", handlePropChange);
   }, []);
 
   const handleSaveSettings = async () => {
     try {
       setSavingSettings(true);
+      const activeProp = localStorage.getItem("active_property_id") || "p_nahuel";
+
+      // Si hay una propiedad activa específica, actualizar su precio base en `properties`
+      if (activeProp && activeProp !== "todas") {
+        await propertyService.update(activeProp, { basePrice });
+      }
+
       await settingService.update({
         basePrice,
         cleaningFee,
@@ -122,7 +139,7 @@ function Tarifas() {
         depositPercent,
       });
 
-      toast.success("Ajustes y reglas guardados en Supabase");
+      toast.success("Tarifas y precios guardados en Supabase");
     } catch (e) {
       toast.error("Error al guardar ajustes en Supabase");
     } finally {
@@ -138,7 +155,10 @@ function Tarifas() {
 
     try {
       setSubmittingRule(true);
+      const activeProp = localStorage.getItem("active_property_id") || "p_nahuel";
+
       const newRule = await rateService.create({
+        propertyId: activeProp === "todas" ? "p_nahuel" : activeProp,
         name: ruleName,
         type: ruleType,
         from: fromDate,
@@ -242,7 +262,6 @@ function Tarifas() {
                 <CardTitle className="font-display text-base">Reglas y Descuentos Configurables</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Descuento semanal */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
@@ -268,7 +287,6 @@ function Tarifas() {
                   <Separator className="mt-3" />
                 </div>
 
-                {/* Descuento mensual */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
@@ -294,7 +312,6 @@ function Tarifas() {
                   <Separator className="mt-3" />
                 </div>
 
-                {/* Mínimo de noches en alta */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
@@ -320,7 +337,6 @@ function Tarifas() {
                   <Separator className="mt-3" />
                 </div>
 
-                {/* Mascotas */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
@@ -344,7 +360,6 @@ function Tarifas() {
                   <Separator className="mt-3" />
                 </div>
 
-                {/* Seña obligatoria */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">

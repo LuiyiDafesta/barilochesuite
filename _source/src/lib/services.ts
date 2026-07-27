@@ -562,11 +562,16 @@ export const ticketService = {
 
 // Servicios de Tarifas y Reglas
 export const rateService = {
-  async getAll() {
-    const { data, error } = await supabase.from("rate_rules").select("*").order("from_date", { ascending: true });
+  async getAll(propertyId?: string) {
+    let query = supabase.from("rate_rules").select("*").order("from_date", { ascending: true });
+    if (propertyId && propertyId !== "todas") {
+      query = query.eq("property_id", propertyId);
+    }
+    const { data, error } = await query;
     if (error || !data) return mockRateRules;
     return data.map((r) => ({
       id: r.id,
+      propertyId: r.property_id || "p_nahuel",
       name: r.name,
       type: r.type,
       from: r.from_date,
@@ -580,6 +585,7 @@ export const rateService = {
   async create(rule: any) {
     const { data, error } = await supabase.from("rate_rules").insert([{
       id: rule.id || `t_${Date.now()}`,
+      property_id: rule.propertyId || "p_nahuel",
       name: rule.name,
       type: rule.type,
       from_date: rule.from,
@@ -593,6 +599,7 @@ export const rateService = {
     const r = data[0];
     return {
       id: r.id,
+      propertyId: r.property_id || "p_nahuel",
       name: r.name,
       type: r.type,
       from: r.from_date,
@@ -655,11 +662,16 @@ export const blockService = {
 
 // Servicios de Reseñas
 export const reviewService = {
-  async getAll() {
-    const { data, error } = await supabase.from("reviews").select("*").order("date_str", { ascending: false });
+  async getAll(propertyId?: string) {
+    let query = supabase.from("reviews").select("*").order("date_str", { ascending: false });
+    if (propertyId && propertyId !== "todas") {
+      query = query.eq("property_id", propertyId);
+    }
+    const { data, error } = await query;
     if (error || !data) return mockReviews;
     return data.map((r) => ({
       id: r.id,
+      propertyId: r.property_id || "p_nahuel",
       name: r.name,
       country: r.country,
       comment: r.comment,
@@ -672,6 +684,7 @@ export const reviewService = {
     const todayIso = new Date().toISOString().split("T")[0];
     const { data, error } = await supabase.from("reviews").insert([{
       id: `r_${Date.now()}`,
+      property_id: review.propertyId || "p_nahuel",
       name: review.name,
       country: review.country || "Argentina",
       comment: review.comment,
@@ -683,6 +696,7 @@ export const reviewService = {
     const r = data[0];
     return {
       id: r.id,
+      propertyId: r.property_id || "p_nahuel",
       name: r.name,
       country: r.country,
       comment: r.comment,
@@ -699,11 +713,16 @@ export const reviewService = {
 
 // Servicios de Lugares Cercanos
 export const placeService = {
-  async getAll() {
-    const { data, error } = await supabase.from("places").select("*").order("name", { ascending: true });
+  async getAll(propertyId?: string) {
+    let query = supabase.from("places").select("*").order("name", { ascending: true });
+    if (propertyId && propertyId !== "todas") {
+      query = query.eq("property_id", propertyId);
+    }
+    const { data, error } = await query;
     if (error || !data) return mockPlaces;
     return data.map((p) => ({
       id: p.id,
+      propertyId: p.property_id || "p_nahuel",
       name: p.name,
       category: p.category,
       distance: p.distance,
@@ -715,6 +734,7 @@ export const placeService = {
   async create(place: any) {
     const { data, error } = await supabase.from("places").insert([{
       id: place.id || `p_${Date.now()}`,
+      property_id: place.propertyId || "p_nahuel",
       name: place.name,
       category: place.category || "Centro",
       distance: place.distance || "",
@@ -726,6 +746,7 @@ export const placeService = {
     const p = data[0];
     return {
       id: p.id,
+      propertyId: p.property_id || "p_nahuel",
       name: p.name,
       category: p.category,
       distance: p.distance,

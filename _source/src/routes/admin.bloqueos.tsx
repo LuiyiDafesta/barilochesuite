@@ -34,9 +34,10 @@ function Bloqueos() {
   const loadData = async () => {
     try {
       setLoading(true);
+      const activeProp = localStorage.getItem("active_property_id") || "todas";
       const [blockData, resData] = await Promise.all([
-        blockService.getAll(),
-        reservationService.getAll(),
+        blockService.getAll(activeProp),
+        reservationService.getAll(activeProp),
       ]);
       setItems(blockData);
       setReservations(resData);
@@ -49,6 +50,9 @@ function Bloqueos() {
 
   useEffect(() => {
     loadData();
+    const handlePropChange = () => loadData();
+    window.addEventListener("property_changed", handlePropChange);
+    return () => window.removeEventListener("property_changed", handlePropChange);
   }, []);
 
   const occupancy = useMemo(() => buildOccupancyMap(reservations, items), [reservations, items]);
@@ -57,9 +61,11 @@ function Bloqueos() {
     if (!range?.from || !range?.to) return;
     try {
       setCreating(true);
+      const activeProp = localStorage.getItem("active_property_id") || "p_nahuel";
       const fromStr = range.from.toISOString().split("T")[0];
       const toStr = range.to.toISOString().split("T")[0];
       const newBlock = await blockService.create({
+        propertyId: activeProp === "todas" ? "p_nahuel" : activeProp,
         from: fromStr,
         to: toStr,
         reason,

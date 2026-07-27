@@ -45,7 +45,8 @@ function Temporadas() {
   const loadSeasons = async () => {
     try {
       setLoading(true);
-      const data = await rateService.getAll();
+      const activeProp = localStorage.getItem("active_property_id") || "todas";
+      const data = await rateService.getAll(activeProp);
       setSeasons(data);
     } catch (e) {
       console.error("Error al cargar temporadas de Supabase:", e);
@@ -56,6 +57,9 @@ function Temporadas() {
 
   useEffect(() => {
     loadSeasons();
+    const handlePropChange = () => loadSeasons();
+    window.addEventListener("property_changed", handlePropChange);
+    return () => window.removeEventListener("property_changed", handlePropChange);
   }, []);
 
   const handleCreateSeason = async () => {
@@ -66,7 +70,10 @@ function Temporadas() {
 
     try {
       setSubmitting(true);
+      const activeProp = localStorage.getItem("active_property_id") || "p_nahuel";
+
       const newSeason = await rateService.create({
+        propertyId: activeProp === "todas" ? "p_nahuel" : activeProp,
         name: seasonName,
         type: seasonType,
         from: fromDate,

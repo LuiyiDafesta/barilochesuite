@@ -10,6 +10,7 @@ import { settingService } from "@/lib/services";
 
 const links = [
   { to: "/", label: "Inicio" },
+  { to: "/propiedades", label: "Propiedades" },
   { to: "/galeria", label: "Galería" },
   { to: "/ubicacion", label: "Ubicación" },
   { to: "/reservar", label: "Disponibilidad" },

@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as GaleriaRouteImport } from './routes/galeria'
 import { Route as MiReservaRouteImport } from './routes/mi-reserva'
+import { Route as PropiedadesRouteImport } from './routes/propiedades'
 import { Route as ReservarRouteImport } from './routes/reservar'
 import { Route as UbicacionRouteImport } from './routes/ubicacion'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -28,6 +29,7 @@ import { Route as AdminResenasRouteImport } from './routes/admin.resenas'
 import { Route as AdminReservasRouteImport } from './routes/admin.reservas'
 import { Route as AdminTarifasRouteImport } from './routes/admin.tarifas'
 import { Route as AdminTemporadasRouteImport } from './routes/admin.temporadas'
+import { Route as PropiedadIdRouteImport } from './routes/propiedad.$id'
 import { Route as AdminClientesIndexRouteImport } from './routes/admin.clientes.index'
 import { Route as AdminClientesIdRouteImport } from './routes/admin.clientes.$id'
 
@@ -49,6 +51,11 @@ const GaleriaRoute = GaleriaRouteImport.update({
 const MiReservaRoute = MiReservaRouteImport.update({
   id: '/mi-reserva',
   path: '/mi-reserva',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PropiedadesRoute = PropiedadesRouteImport.update({
+  id: '/propiedades',
+  path: '/propiedades',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReservarRoute = ReservarRouteImport.update({
@@ -126,6 +133,11 @@ const AdminTemporadasRoute = AdminTemporadasRouteImport.update({
   path: '/temporadas',
   getParentRoute: () => AdminRoute,
 } as any)
+const PropiedadIdRoute = PropiedadIdRouteImport.update({
+  id: '/propiedad/$id',
+  path: '/propiedad/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminClientesIndexRoute = AdminClientesIndexRouteImport.update({
   id: '/clientes/',
   path: '/clientes/',
@@ -142,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/galeria': typeof GaleriaRoute
   '/mi-reserva': typeof MiReservaRoute
+  '/propiedades': typeof PropiedadesRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
   '/admin/bloqueos': typeof AdminBloqueosRoute
@@ -156,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/admin/reservas': typeof AdminReservasRoute
   '/admin/tarifas': typeof AdminTarifasRoute
   '/admin/temporadas': typeof AdminTemporadasRoute
+  '/propiedad/$id': typeof PropiedadIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/clientes/$id': typeof AdminClientesIdRoute
   '/admin/clientes/': typeof AdminClientesIndexRoute
@@ -164,6 +178,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/galeria': typeof GaleriaRoute
   '/mi-reserva': typeof MiReservaRoute
+  '/propiedades': typeof PropiedadesRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
   '/admin/bloqueos': typeof AdminBloqueosRoute
@@ -178,6 +193,7 @@ export interface FileRoutesByTo {
   '/admin/reservas': typeof AdminReservasRoute
   '/admin/tarifas': typeof AdminTarifasRoute
   '/admin/temporadas': typeof AdminTemporadasRoute
+  '/propiedad/$id': typeof PropiedadIdRoute
   '/admin': typeof AdminIndexRoute
   '/admin/clientes/$id': typeof AdminClientesIdRoute
   '/admin/clientes': typeof AdminClientesIndexRoute
@@ -188,6 +204,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/galeria': typeof GaleriaRoute
   '/mi-reserva': typeof MiReservaRoute
+  '/propiedades': typeof PropiedadesRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
   '/admin/bloqueos': typeof AdminBloqueosRoute
@@ -202,6 +219,7 @@ export interface FileRoutesById {
   '/admin/reservas': typeof AdminReservasRoute
   '/admin/tarifas': typeof AdminTarifasRoute
   '/admin/temporadas': typeof AdminTemporadasRoute
+  '/propiedad/$id': typeof PropiedadIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/clientes/$id': typeof AdminClientesIdRoute
   '/admin/clientes/': typeof AdminClientesIndexRoute
@@ -213,6 +231,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/galeria'
     | '/mi-reserva'
+    | '/propiedades'
     | '/reservar'
     | '/ubicacion'
     | '/admin/bloqueos'
@@ -227,6 +246,7 @@ export interface FileRouteTypes {
     | '/admin/reservas'
     | '/admin/tarifas'
     | '/admin/temporadas'
+    | '/propiedad/$id'
     | '/admin/'
     | '/admin/clientes/$id'
     | '/admin/clientes/'
@@ -235,6 +255,7 @@ export interface FileRouteTypes {
     | '/'
     | '/galeria'
     | '/mi-reserva'
+    | '/propiedades'
     | '/reservar'
     | '/ubicacion'
     | '/admin/bloqueos'
@@ -249,6 +270,7 @@ export interface FileRouteTypes {
     | '/admin/reservas'
     | '/admin/tarifas'
     | '/admin/temporadas'
+    | '/propiedad/$id'
     | '/admin'
     | '/admin/clientes/$id'
     | '/admin/clientes'
@@ -258,6 +280,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/galeria'
     | '/mi-reserva'
+    | '/propiedades'
     | '/reservar'
     | '/ubicacion'
     | '/admin/bloqueos'
@@ -272,6 +295,7 @@ export interface FileRouteTypes {
     | '/admin/reservas'
     | '/admin/tarifas'
     | '/admin/temporadas'
+    | '/propiedad/$id'
     | '/admin/'
     | '/admin/clientes/$id'
     | '/admin/clientes/'
@@ -282,8 +306,10 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   GaleriaRoute: typeof GaleriaRoute
   MiReservaRoute: typeof MiReservaRoute
+  PropiedadesRoute: typeof PropiedadesRoute
   ReservarRoute: typeof ReservarRoute
   UbicacionRoute: typeof UbicacionRoute
+  PropiedadIdRoute: typeof PropiedadIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -314,6 +340,13 @@ declare module '@tanstack/react-router' {
       path: '/mi-reserva'
       fullPath: '/mi-reserva'
       preLoaderRoute: typeof MiReservaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/propiedades': {
+      id: '/propiedades'
+      path: '/propiedades'
+      fullPath: '/propiedades'
+      preLoaderRoute: typeof PropiedadesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reservar': {
@@ -421,6 +454,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTemporadasRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/propiedad/$id': {
+      id: '/propiedad/$id'
+      path: '/propiedad/$id'
+      fullPath: '/propiedad/$id'
+      preLoaderRoute: typeof PropiedadIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/clientes/': {
       id: '/admin/clientes/'
       path: '/clientes'
@@ -481,8 +521,10 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   GaleriaRoute: GaleriaRoute,
   MiReservaRoute: MiReservaRoute,
+  PropiedadesRoute: PropiedadesRoute,
   ReservarRoute: ReservarRoute,
   UbicacionRoute: UbicacionRoute,
+  PropiedadIdRoute: PropiedadIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
