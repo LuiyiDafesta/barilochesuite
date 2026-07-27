@@ -1,4 +1,4 @@
-import { reservations } from "@/data/admin";
+import { Block, Reservation, reservations as mockReservations } from "@/data/admin";
 
 export const toDate = (iso: string) => new Date(`${iso}T12:00:00`);
 
@@ -20,28 +20,48 @@ export const nightsBetween = (from?: Date, to?: Date) => {
 export const sameDay = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
-type DayState = "reservada" | "pendiente" | "bloqueada";
+export type DetailedDayState = "reservada" | "pendiente" | "bloqueada" | "mantenimiento" | "personal";
 
-const stateOf = (status: string): DayState | null => {
-  if (status === "confirmada") return "reservada";
-  if (status === "pendiente") return "pendiente";
-  if (status === "mantenimiento" || status === "personal" || status === "bloqueo") return "bloqueada";
-  return null;
+export const buildOccupancyMap = (reservations: Reservation[], blocks: Block[]) => {
+  const map: Record<DetailedDayState, Date[]> = {
+    reservada: [],
+    pendiente: [],
+    bloqueada: [],
+    mantenimiento: [],
+    personal: [],
+  };
+
+  reservations.forEach((r) => {
+    let state: DetailedDayState | null = null;
+    if (r.status === "confirmada") state = "reservada";
+    else if (r.status === "pendiente") state = "pendiente";
+    else if (r.status === "mantenimiento") state = "mantenimiento";
+    else if (r.status === "personal") state = "personal";
+    else if (r.status === "bloqueo") state = "bloqueada";
+
+    if (state) {
+      eachDay(toDate(r.checkIn), toDate(r.checkOut)).forEach((d) => map[state!].push(d));
+    }
+  });
+
+  blocks.forEach((b) => {
+    let state: DetailedDayState = "bloqueada";
+    if (b.reason === "Mantenimiento") state = "mantenimiento";
+    else if (b.reason === "Uso personal") state = "personal";
+
+    eachDay(toDate(b.from), toDate(b.to)).forEach((d) => map[state].push(d));
+  });
+
+  return map;
 };
 
 export const occupancyDays = () => {
-  const map: Record<DayState, Date[]> = { reservada: [], pendiente: [], bloqueada: [] };
-  reservations.forEach((r) => {
-    const state = stateOf(r.status);
-    if (!state) return;
-    eachDay(toDate(r.checkIn), toDate(r.checkOut)).forEach((d) => map[state].push(d));
-  });
-  return map;
+  return buildOccupancyMap(mockReservations, []);
 };
 
 export const isDayTaken = (day: Date) => {
   const map = occupancyDays();
-  return [...map.reservada, ...map.pendiente, ...map.bloqueada].some((d) => sameDay(d, day));
+  return [...map.reservada, ...map.pendiente, ...map.bloqueada, ...map.mantenimiento, ...map.personal].some((d) => sameDay(d, day));
 };
 
 export const formatLong = (date?: Date) =>
