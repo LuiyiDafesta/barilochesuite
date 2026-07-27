@@ -91,6 +91,16 @@ function Temporadas() {
     }
   };
 
+  const handleDeleteSeason = async (id: string) => {
+    try {
+      await rateService.delete(id);
+      setSeasons((prev) => prev.filter((s) => s.id !== id));
+      toast.success("Temporada eliminada de Supabase");
+    } catch (e) {
+      toast.error("Error al eliminar temporada en Supabase");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -134,10 +144,7 @@ function Temporadas() {
                       variant="ghost"
                       size="icon"
                       aria-label="Eliminar temporada"
-                      onClick={() => {
-                        setSeasons((prev) => prev.filter((s) => s.id !== r.id));
-                        toast.success("Temporada eliminada de la vista");
-                      }}
+                      onClick={() => handleDeleteSeason(r.id)}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

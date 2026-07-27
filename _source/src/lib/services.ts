@@ -24,19 +24,19 @@ export const settingService = {
       };
     }
     return {
-      basePrice: Number(data.base_price || 185000),
-      cleaningFee: Number(data.cleaning_fee || 45000),
-      weekendSurchargePercent: Number(data.weekend_surcharge_percent || 15),
+      basePrice: data.base_price != null ? Number(data.base_price) : 185000,
+      cleaningFee: data.cleaning_fee != null ? Number(data.cleaning_fee) : 45000,
+      weekendSurchargePercent: data.weekend_surcharge_percent != null ? Number(data.weekend_surcharge_percent) : 15,
       weeklyDiscountEnabled: data.weekly_discount_enabled ?? true,
-      weeklyDiscountPercent: Number(data.weekly_discount_percent || 10),
+      weeklyDiscountPercent: data.weekly_discount_percent != null ? Number(data.weekly_discount_percent) : 10,
       monthlyDiscountEnabled: data.monthly_discount_enabled ?? true,
-      monthlyDiscountPercent: Number(data.monthly_discount_percent || 22),
+      monthlyDiscountPercent: data.monthly_discount_percent != null ? Number(data.monthly_discount_percent) : 22,
       minNightsHighSeasonEnabled: data.min_nights_high_season_enabled ?? true,
-      minNightsHighSeason: Number(data.min_nights_high_season || 4),
+      minNightsHighSeason: data.min_nights_high_season != null ? Number(data.min_nights_high_season) : 4,
       petsAllowedEnabled: data.pets_allowed_enabled ?? false,
-      petFeeAmount: Number(data.pet_fee_amount || 18000),
+      petFeeAmount: data.pet_fee_amount != null ? Number(data.pet_fee_amount) : 18000,
       depositRequiredEnabled: data.deposit_required_enabled ?? true,
-      depositPercent: Number(data.deposit_percent || 30),
+      depositPercent: data.deposit_percent != null ? Number(data.deposit_percent) : 30,
     };
   },
   async update(settings: any) {
@@ -65,7 +65,7 @@ export const settingService = {
 export const reservationService = {
   async getAll() {
     const { data, error } = await supabase.from("reservations").select("*").order("check_in", { ascending: true });
-    if (error || !data || data.length === 0) return mockReservations;
+    if (error || !data) return mockReservations;
     return data.map((r) => ({
       id: r.id,
       code: r.code,
@@ -124,7 +124,7 @@ export const reservationService = {
 export const leadService = {
   async getAll() {
     const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
-    if (error || !data || data.length === 0) return mockLeads;
+    if (error || !data) return mockLeads;
     return data.map((l) => ({
       id: l.id,
       clientId: l.client_id || "",
@@ -186,7 +186,7 @@ export const leadService = {
 export const clientService = {
   async getAll() {
     const { data, error } = await supabase.from("clients").select("*").order("last_name", { ascending: true });
-    if (error || !data || data.length === 0) return mockClients;
+    if (error || !data) return mockClients;
     return data.map((c) => ({
       id: c.id,
       firstName: c.first_name,
@@ -237,7 +237,7 @@ export const clientService = {
 export const rateService = {
   async getAll() {
     const { data, error } = await supabase.from("rate_rules").select("*").order("from_date", { ascending: true });
-    if (error || !data || data.length === 0) return mockRateRules;
+    if (error || !data) return mockRateRules;
     return data.map((r) => ({
       id: r.id,
       name: r.name,
@@ -286,7 +286,7 @@ export const rateService = {
 export const blockService = {
   async getAll() {
     const { data, error } = await supabase.from("blocks").select("*").order("from_date", { ascending: true });
-    if (error || !data || data.length === 0) return mockBlocks;
+    if (error || !data) return mockBlocks;
     return data.map((b) => ({
       id: b.id,
       from: b.from_date,
@@ -323,7 +323,7 @@ export const blockService = {
 export const reviewService = {
   async getAll() {
     const { data, error } = await supabase.from("reviews").select("*").order("date_str", { ascending: false });
-    if (error || !data || data.length === 0) return mockReviews;
+    if (error || !data) return mockReviews;
     return data.map((r) => ({
       id: r.id,
       name: r.name,
@@ -344,7 +344,7 @@ export const reviewService = {
 export const placeService = {
   async getAll() {
     const { data, error } = await supabase.from("places").select("*").order("name", { ascending: true });
-    if (error || !data || data.length === 0) return mockPlaces;
+    if (error || !data) return mockPlaces;
     return data.map((p) => ({
       id: p.id,
       name: p.name,
