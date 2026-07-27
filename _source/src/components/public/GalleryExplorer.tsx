@@ -51,10 +51,27 @@ export function GalleryExplorer({ compact = false }: { compact?: boolean }) {
     loadSupabaseGallery();
   }, []);
 
-  const items = useMemo(
-    () => (filter === "todas" ? galleryItems : galleryItems.filter((g) => g.category === filter)),
-    [filter, galleryItems],
-  );
+  // Filtrar únicamente las categorías que poseen al menos un elemento cargado
+  const availableCategories = useMemo(() => {
+    return galleryCategories.filter((c) => {
+      if (c.id === "todas") return true;
+      if (c.id === "videos") {
+        return galleryItems.some((g) => g.type === "video" || g.type === "video-vertical");
+      }
+      if (c.id === "tour360") {
+        return galleryItems.some((g) => g.type === "tour" || (g.category as string) === "tour360");
+      }
+      return galleryItems.some((g) => g.category === c.id);
+    });
+  }, [galleryItems]);
+
+  const items = useMemo(() => {
+    if (filter === "todas") return galleryItems;
+    if (filter === "videos") return galleryItems.filter((g) => g.type === "video" || g.type === "video-vertical");
+    if (filter === "tour360") return galleryItems.filter((g) => g.type === "tour" || (g.category as string) === "tour360");
+    return galleryItems.filter((g) => g.category === filter);
+  }, [filter, galleryItems]);
+
   const visible = compact ? items.slice(0, 6) : items;
   const current = index !== null ? visible[index] : null;
 
@@ -68,7 +85,7 @@ export function GalleryExplorer({ compact = false }: { compact?: boolean }) {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-2">
-          {galleryCategories.map((c) => (
+          {availableCategories.map((c) => (
             <button
               key={c.id}
               onClick={() => {
@@ -130,7 +147,6 @@ export function GalleryExplorer({ compact = false }: { compact?: boolean }) {
 
       <Dialog open={index !== null} onOpenChange={(o) => !o && setIndex(null)}>
         <DialogContent className="max-w-[100vw] border-none bg-primary/97 p-0 sm:max-w-[96vw]">
-
           <DialogTitle className="sr-only">{current?.title ?? "Galería"}</DialogTitle>
           {current && (
             <div className="relative flex h-[92vh] w-full items-center justify-center">
