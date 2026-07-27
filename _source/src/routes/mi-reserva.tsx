@@ -3,17 +3,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   Calendar,
   CheckCircle2,
-  Clock,
-  HelpCircle,
+  Home,
   KeyRound,
   LifeBuoy,
   Loader2,
   Lock,
   LogOut,
   MapPin,
-  MessageSquare,
   Send,
-  ShieldCheck,
   Star,
   Wifi,
 } from "lucide-react";
@@ -35,7 +32,7 @@ export const Route = createFileRoute("/mi-reserva")({
 });
 
 function PortalHuesped() {
-  const [session, setSession] = useState<{ client: any; activeReservation: any } | null>(null);
+  const [session, setSession] = useState<{ client: any; activeReservation: any; property: any } | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Formulario Login
@@ -54,7 +51,6 @@ function PortalHuesped() {
   const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
-    // Cargar sesión guardada en localStorage
     const saved = localStorage.getItem("bariloche_guest_session");
     if (saved) {
       try {
@@ -159,7 +155,6 @@ function PortalHuesped() {
     }
   };
 
-  // VISTA 1: Pantalla de Login para el Huésped
   if (!session) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center py-12 px-4">
@@ -213,9 +208,16 @@ function PortalHuesped() {
     );
   }
 
-  // VISTA 2: Dashboard del Huésped Autenticado
   const client = session.client;
   const activeRes = session.activeReservation;
+  const prop = session.property || {
+    name: "Casa Nahuel",
+    address: "Av. Bustillo Km 6,400, San Carlos de Bariloche",
+    wifiNetwork: "CasaNahuel_5G",
+    wifiPassword: "Nahuel2026",
+    lockCode: "4829#",
+    checkInInfo: "Check-in a partir de las 15:00 hs",
+  };
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 py-8 px-4">
@@ -225,7 +227,7 @@ function PortalHuesped() {
           <Badge className="mb-2 bg-teal text-teal-foreground">Huésped Autenticado</Badge>
           <h1 className="font-display text-2xl sm:text-3xl font-bold">¡Hola, {client.firstName}!</h1>
           <p className="mt-1 text-sm text-primary-foreground/80">
-            Bienvenido/a a tu portal exclusivo de Bariloche Suite.
+            Reserva para <span className="font-semibold text-white">{prop.name}</span>.
           </p>
         </div>
         <Button variant="outline" size="sm" className="rounded-full bg-background/10 text-primary-foreground hover:bg-background/20" onClick={handleLogout}>
@@ -246,24 +248,28 @@ function PortalHuesped() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Pestaña 1: Mi Estadía */}
         <TabsContent value="estadia" className="mt-6 space-y-6">
           {activeRes ? (
             <Card className="border-border/70 shadow-soft">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="font-display text-xl">Estadía Confirmada</CardTitle>
+                  <div>
+                    <CardTitle className="font-display text-xl">{prop.name}</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" /> {prop.address}
+                    </p>
+                  </div>
                   <Badge variant="secondary" className="font-mono">{activeRes.code}</Badge>
                 </div>
-                <CardDescription>
-                  {formatDate(activeRes.check_in || activeRes.checkIn)} → {formatDate(activeRes.check_out || activeRes.checkOut)}
+                <CardDescription className="pt-2">
+                  Fechas: {formatDate(activeRes.check_in || activeRes.checkIn)} → {formatDate(activeRes.check_out || activeRes.checkOut)}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="rounded-xl border border-border bg-secondary/40 p-4">
                     <p className="text-xs uppercase tracking-wider text-muted-foreground">Check-in</p>
-                    <p className="mt-1 font-display font-semibold text-sm">15:00 hs en adelante</p>
+                    <p className="mt-1 font-display font-semibold text-sm">{prop.checkInInfo || "15:00 hs en adelante"}</p>
                   </div>
                   <div className="rounded-xl border border-border bg-secondary/40 p-4">
                     <p className="text-xs uppercase tracking-wider text-muted-foreground">Check-out</p>
@@ -279,18 +285,17 @@ function PortalHuesped() {
 
                 <Separator />
 
-                {/* Guía de la Propiedad */}
                 <div>
-                  <h3 className="font-display text-lg font-semibold mb-4">Datos útiles para tu estadía</h3>
+                  <h3 className="font-display text-lg font-semibold mb-4">Datos útiles para tu estadía en {prop.name}</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="flex gap-4 rounded-2xl border border-border/80 p-4 bg-card">
                       <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal/15 text-teal">
                         <Wifi className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold">Red WiFi</p>
-                        <p className="text-xs text-muted-foreground">Red: <span className="font-mono text-foreground font-semibold">BarilocheSuite_5G</span></p>
-                        <p className="text-xs text-muted-foreground">Clave: <span className="font-mono text-foreground font-semibold">Bariloche2026</span></p>
+                        <p className="text-sm font-semibold">Red WiFi de la Propiedad</p>
+                        <p className="text-xs text-muted-foreground">Red: <span className="font-mono text-foreground font-semibold">{prop.wifiNetwork || "BarilocheSuite_5G"}</span></p>
+                        <p className="text-xs text-muted-foreground">Clave: <span className="font-mono text-foreground font-semibold">{prop.wifiPassword || "Bariloche2026"}</span></p>
                       </div>
                     </div>
 
@@ -299,19 +304,18 @@ function PortalHuesped() {
                         <KeyRound className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold">Acceso a la Suite</p>
-                        <p className="text-xs text-muted-foreground">Cerradura digital: <span className="font-mono text-foreground font-semibold">4829#</span></p>
-                        <p className="text-xs text-muted-foreground">Caja fuerte interior: <span className="font-mono text-foreground font-semibold">1234#</span></p>
+                        <p className="text-sm font-semibold">Acceso a {prop.name}</p>
+                        <p className="text-xs text-muted-foreground">Cerradura digital: <span className="font-mono text-foreground font-semibold">{prop.lockCode || "4829#"}</span></p>
                       </div>
                     </div>
 
                     <div className="flex gap-4 rounded-2xl border border-border/80 p-4 bg-card sm:col-span-2">
                       <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal/15 text-teal">
-                        <MapPin className="h-5 w-5" />
+                        <Home className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold">Ubicación y Dirección</p>
-                        <p className="text-xs text-muted-foreground">Av. Bustillo Km 6,400, San Carlos de Bariloche, Río Negro.</p>
+                        <p className="text-sm font-semibold">Ubicación y Dirección Exacta</p>
+                        <p className="text-xs text-muted-foreground">{prop.address}</p>
                       </div>
                     </div>
                   </div>
@@ -327,7 +331,6 @@ function PortalHuesped() {
           )}
         </TabsContent>
 
-        {/* Pestaña 2: Mesa de Ayuda / Tickets */}
         <TabsContent value="tickets" className="mt-6 space-y-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader>
@@ -369,7 +372,6 @@ function PortalHuesped() {
             </CardContent>
           </Card>
 
-          {/* Historial de Tickets */}
           <Card className="border-border/70 shadow-soft">
             <CardHeader>
               <CardTitle className="font-display text-base">Tus consultas enviadas</CardTitle>
@@ -395,11 +397,10 @@ function PortalHuesped() {
           </Card>
         </TabsContent>
 
-        {/* Pestaña 3: Dejar Reseña */}
         <TabsContent value="resena" className="mt-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader>
-              <CardTitle className="font-display text-xl">Dejá tu opinión sobre Bariloche Suite</CardTitle>
+              <CardTitle className="font-display text-xl">Dejá tu opinión sobre {prop.name}</CardTitle>
               <CardDescription>
                 Tu reseña nos ayuda a seguir brindando una experiencia 5 estrellas en Bariloche.
               </CardDescription>
@@ -431,7 +432,7 @@ function PortalHuesped() {
                   <Textarea
                     id="rComment"
                     rows={4}
-                    placeholder="Excelente vista al lago, muy confortable el departamento..."
+                    placeholder={`Excelente estadía en ${prop.name}...`}
                     value={reviewComment}
                     onChange={(e) => setReviewComment(e.target.value)}
                     required

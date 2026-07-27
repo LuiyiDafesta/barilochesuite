@@ -73,9 +73,10 @@ function CalendarioMaestro() {
   const loadCalendarData = async () => {
     try {
       setLoading(true);
+      const activeProp = localStorage.getItem("active_property_id") || "todas";
       const [resData, blockData] = await Promise.all([
-        reservationService.getAll(),
-        blockService.getAll(),
+        reservationService.getAll(activeProp),
+        blockService.getAll(activeProp),
       ]);
       setReservations(resData);
       setBlocks(blockData);
@@ -88,6 +89,9 @@ function CalendarioMaestro() {
 
   useEffect(() => {
     loadCalendarData();
+    const handlePropChange = () => loadCalendarData();
+    window.addEventListener("property_changed", handlePropChange);
+    return () => window.removeEventListener("property_changed", handlePropChange);
   }, []);
 
   const occupancy = useMemo(() => buildOccupancyMap(reservations, blocks), [reservations, blocks]);
@@ -104,7 +108,6 @@ function CalendarioMaestro() {
     const fromStr = range.from.toISOString().split("T")[0];
     const toStr = range.to.toISOString().split("T")[0];
 
-    // Validar superposición si la reserva se intenta guardar como confirmada
     if (reservaStatus === "confirmada") {
       const conflict = checkRangeOverlap(fromStr, toStr, reservations, blocks);
       if (conflict.hasConflict) {
@@ -117,9 +120,11 @@ function CalendarioMaestro() {
 
     try {
       setSubmitting(true);
+      const activeProp = localStorage.getItem("active_property_id") || "p_nahuel";
 
       const newRes = await reservationService.create({
         guest: guestName,
+        propertyId: activeProp === "todas" ? "p_nahuel" : activeProp,
         checkIn: fromStr,
         checkOut: toStr,
         guests: guestCount,
@@ -144,7 +149,7 @@ function CalendarioMaestro() {
     }
   };
 
-  // Guardar Bloqueo en Supabase (Mantenimiento, Uso personal, Reserva externa)
+  // Guardar Bloqueo en Supabase
   const handleSaveBloqueo = async () => {
     if (!range?.from || !range?.to) return;
 
@@ -161,8 +166,10 @@ function CalendarioMaestro() {
 
     try {
       setSubmitting(true);
+      const activeProp = localStorage.getItem("active_property_id") || "p_nahuel";
 
       const newBlock = await blockService.create({
+        propertyId: activeProp === "todas" ? "p_nahuel" : activeProp,
         from: fromStr,
         to: toStr,
         reason: blockReason,
@@ -183,7 +190,6 @@ function CalendarioMaestro() {
     }
   };
 
-  // Desbloquear / Eliminar reservas o bloqueos en las fechas seleccionadas
   const handleDesbloquear = async () => {
     if (!range?.from || !range?.to) return;
 
@@ -479,7 +485,7 @@ function CalendarioMaestro() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal Bloquear Fechas (Mantenimiento, Uso personal, Reserva externa) */}
+      {/* Modal Bloquear Fechas */}
       <Dialog open={openBloqueoModal} onOpenChange={setOpenBloqueoModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

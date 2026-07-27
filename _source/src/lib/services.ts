@@ -2,6 +2,141 @@ import { supabase } from "./supabase";
 import { reservations as mockReservations, leads as mockLeads, clients as mockClients, rateRules as mockRateRules, blocks as mockBlocks } from "@/data/admin";
 import { reviews as mockReviews, places as mockPlaces } from "@/data/site";
 
+export interface PropertyItem {
+  id: string;
+  name: string;
+  tagline: string;
+  address: string;
+  maxGuests: number;
+  petsAllowed: boolean;
+  isMain: boolean;
+  wifiNetwork: string;
+  wifiPassword: string;
+  lockCode: string;
+  checkInInfo: string;
+  basePrice: number;
+}
+
+// Servicio de Propiedades
+export const propertyService = {
+  async getAll(): Promise<PropertyItem[]> {
+    const { data, error } = await supabase.from("properties").select("*").order("is_main", { ascending: false });
+    if (error || !data || data.length === 0) {
+      return [
+        {
+          id: "p_nahuel",
+          name: "Casa Nahuel",
+          tagline: "Vista panorámica al Lago Nahuel Huapi",
+          address: "Av. Bustillo Km 6,400",
+          maxGuests: 4,
+          petsAllowed: false,
+          isMain: true,
+          wifiNetwork: "CasaNahuel_5G",
+          wifiPassword: "Nahuel2026",
+          lockCode: "4829#",
+          checkInInfo: "Check-in a partir de las 15:00 hs",
+          basePrice: 185000,
+        },
+        {
+          id: "p_catedral",
+          name: "Loft Catedral",
+          tagline: "A pasos del centro de esquí Cerro Catedral",
+          address: "Villa Catedral, Base",
+          maxGuests: 2,
+          petsAllowed: true,
+          isMain: false,
+          wifiNetwork: "Catedral_Guest",
+          wifiPassword: "Nieve2026",
+          lockCode: "1192#",
+          checkInInfo: "Check-in a partir de las 15:00 hs",
+          basePrice: 210000,
+        },
+      ];
+    }
+    return data.map((p) => ({
+      id: p.id,
+      name: p.name,
+      tagline: p.tagline || "",
+      address: p.address || "",
+      maxGuests: p.max_guests || 4,
+      petsAllowed: !!p.pets_allowed,
+      isMain: !!p.is_main,
+      wifiNetwork: p.wifi_network || "",
+      wifiPassword: p.wifi_password || "",
+      lockCode: p.lock_code || "",
+      checkInInfo: p.check_in_info || "",
+      basePrice: Number(p.base_price || 185000),
+    }));
+  },
+  async create(prop: Partial<PropertyItem>): Promise<PropertyItem> {
+    const { data, error } = await supabase.from("properties").insert([{
+      id: prop.id || `p_${Date.now()}`,
+      name: prop.name,
+      tagline: prop.tagline || "",
+      address: prop.address || "",
+      max_guests: prop.maxGuests || 4,
+      pets_allowed: prop.petsAllowed || false,
+      is_main: prop.isMain || false,
+      wifi_network: prop.wifiNetwork || "",
+      wifi_password: prop.wifiPassword || "",
+      lock_code: prop.lockCode || "",
+      check_in_info: prop.checkInInfo || "",
+      base_price: prop.basePrice || 185000,
+    }]).select();
+    if (error) throw error;
+    const p = data[0];
+    return {
+      id: p.id,
+      name: p.name,
+      tagline: p.tagline || "",
+      address: p.address || "",
+      maxGuests: p.max_guests || 4,
+      petsAllowed: !!p.pets_allowed,
+      isMain: !!p.is_main,
+      wifiNetwork: p.wifi_network || "",
+      wifiPassword: p.wifi_password || "",
+      lockCode: p.lock_code || "",
+      checkInInfo: p.check_in_info || "",
+      basePrice: Number(p.base_price || 185000),
+    };
+  },
+  async update(id: string, prop: Partial<PropertyItem>): Promise<PropertyItem> {
+    const { data, error } = await supabase.from("properties").update({
+      name: prop.name,
+      tagline: prop.tagline,
+      address: prop.address,
+      max_guests: prop.maxGuests,
+      pets_allowed: prop.petsAllowed,
+      is_main: prop.isMain,
+      wifi_network: prop.wifiNetwork,
+      wifi_password: prop.wifiPassword,
+      lock_code: prop.lockCode,
+      check_in_info: prop.checkInInfo,
+      base_price: prop.basePrice,
+    }).eq("id", id).select();
+    if (error) throw error;
+    const p = data[0];
+    return {
+      id: p.id,
+      name: p.name,
+      tagline: p.tagline || "",
+      address: p.address || "",
+      maxGuests: p.max_guests || 4,
+      petsAllowed: !!p.pets_allowed,
+      isMain: !!p.is_main,
+      wifiNetwork: p.wifi_network || "",
+      wifiPassword: p.wifi_password || "",
+      lockCode: p.lock_code || "",
+      checkInInfo: p.check_in_info || "",
+      basePrice: Number(p.base_price || 185000),
+    };
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from("properties").delete().eq("id", id);
+    if (error) throw error;
+  }
+};
+
 // Generador de Código Único de Reserva
 export const generateUniqueReservationCode = async (): Promise<string> => {
   let unique = false;
@@ -80,14 +215,19 @@ export const settingService = {
 
 // Servicios de Reservas
 export const reservationService = {
-  async getAll() {
-    const { data, error } = await supabase.from("reservations").select("*").order("check_in", { ascending: true });
+  async getAll(propertyId?: string) {
+    let query = supabase.from("reservations").select("*").order("check_in", { ascending: true });
+    if (propertyId && propertyId !== "todas") {
+      query = query.eq("property_id", propertyId);
+    }
+    const { data, error } = await query;
     if (error || !data) return mockReservations;
     return data.map((r) => ({
       id: r.id,
       code: r.code,
       guest: r.guest,
       clientId: r.client_id || "",
+      propertyId: r.property_id || "p_nahuel",
       checkIn: r.check_in,
       checkOut: r.check_out,
       guests: r.guests,
@@ -104,6 +244,7 @@ export const reservationService = {
       code: code,
       guest: reservation.guest,
       client_id: reservation.clientId || null,
+      property_id: reservation.propertyId || "p_nahuel",
       check_in: reservation.checkIn,
       check_out: reservation.checkOut,
       guests: reservation.guests || 1,
@@ -119,6 +260,7 @@ export const reservationService = {
       code: r.code,
       guest: r.guest,
       clientId: r.client_id || "",
+      propertyId: r.property_id || "p_nahuel",
       checkIn: r.check_in,
       checkOut: r.check_out,
       guests: r.guests,
@@ -132,6 +274,7 @@ export const reservationService = {
     const { data, error } = await supabase.from("reservations").update({
       guest: reservation.guest,
       client_id: reservation.clientId || null,
+      property_id: reservation.propertyId || "p_nahuel",
       check_in: reservation.checkIn,
       check_out: reservation.checkOut,
       guests: reservation.guests,
@@ -147,6 +290,7 @@ export const reservationService = {
       code: r.code,
       guest: r.guest,
       clientId: r.client_id || "",
+      propertyId: r.property_id || "p_nahuel",
       checkIn: r.check_in,
       checkOut: r.check_out,
       guests: r.guests,
@@ -252,7 +396,6 @@ export const clientService = {
     const clients = await this.getAll();
     const client = clients.find((c) => c.id === id) || clients[0];
     const allReservations = await reservationService.getAll();
-    // Filtrar todas las reservas que pertenecen a este cliente por ID o por coincidencia de nombre
     const fullName = `${client.firstName} ${client.lastName}`.toLowerCase();
     const matchingReservations = allReservations.filter((r) => {
       if (r.clientId && r.clientId === client.id) return true;
@@ -306,10 +449,9 @@ export const clientAuthService = {
     const term = identifier.trim().toLowerCase();
     const pass = passOrCode.trim();
 
-    // 1. Buscar en reservas por código de reserva (ej: CN-8492)
     const { data: resData } = await supabase
       .from("reservations")
-      .select("*")
+      .select("*, properties(*)")
       .ilike("code", term)
       .single();
 
@@ -319,10 +461,9 @@ export const clientAuthService = {
       if (!client) {
         client = clients[0];
       }
-      return { client, activeReservation: resData };
+      return { client, activeReservation: resData, property: resData.properties || null };
     }
 
-    // 2. Buscar en tabla de clientes por Email
     const { data: clientData } = await supabase
       .from("clients")
       .select("*")
@@ -351,7 +492,10 @@ export const clientAuthService = {
       const matchesPassword = client.password.toLowerCase() === pass.toLowerCase() || pass === "Bariloche2026!";
 
       if (matchesCode || matchesPassword || pass.length >= 4) {
-        return { client, activeReservation: clientRes[0] || null };
+        const props = await propertyService.getAll();
+        const activeRes = clientRes[0];
+        const prop = props.find((p) => p.id === activeRes?.propertyId) || props[0];
+        return { client, activeReservation: activeRes || null, property: prop };
       }
     }
 
@@ -452,11 +596,16 @@ export const rateService = {
 
 // Servicios de Bloqueos
 export const blockService = {
-  async getAll() {
-    const { data, error } = await supabase.from("blocks").select("*").order("from_date", { ascending: true });
+  async getAll(propertyId?: string) {
+    let query = supabase.from("blocks").select("*").order("from_date", { ascending: true });
+    if (propertyId && propertyId !== "todas") {
+      query = query.eq("property_id", propertyId);
+    }
+    const { data, error } = await query;
     if (error || !data) return mockBlocks;
     return data.map((b) => ({
       id: b.id,
+      propertyId: b.property_id || "p_nahuel",
       from: b.from_date,
       to: b.to_date,
       reason: b.reason,
@@ -466,6 +615,7 @@ export const blockService = {
   async create(block: any) {
     const { data, error } = await supabase.from("blocks").insert([{
       id: block.id || `k_${Date.now()}`,
+      property_id: block.propertyId || "p_nahuel",
       from_date: block.from,
       to_date: block.to,
       reason: block.reason,
@@ -475,6 +625,7 @@ export const blockService = {
     const b = data[0];
     return {
       id: b.id,
+      propertyId: b.property_id || "p_nahuel",
       from: b.from_date,
       to: b.to_date,
       reason: b.reason,

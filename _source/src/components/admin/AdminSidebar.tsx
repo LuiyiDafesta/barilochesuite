@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
@@ -30,7 +31,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { properties } from "@/data/admin";
+import { PropertyItem, propertyService } from "@/lib/services";
 
 const groups = [
   {
@@ -71,7 +72,32 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
+  const [properties, setProperties] = useState<PropertyItem[]>([]);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("todas");
+
+  useEffect(() => {
+    const loadProps = async () => {
+      try {
+        const data = await propertyService.getAll();
+        setProperties(data);
+        const saved = localStorage.getItem("active_property_id") || "todas";
+        setSelectedPropertyId(saved);
+      } catch (e) {
+        console.error("Error al cargar propiedades en sidebar:", e);
+      }
+    };
+    loadProps();
+  }, []);
+
+  const handleSelectProperty = (id: string) => {
+    setSelectedPropertyId(id);
+    localStorage.setItem("active_property_id", id);
+    window.dispatchEvent(new Event("property_changed"));
+  };
+
   const isActive = (url: string) => (url === "/admin" ? pathname === "/admin" : pathname.startsWith(url));
+
+  const activePropName = properties.find((p) => p.id === selectedPropertyId)?.name || "Todas las Propiedades";
 
   return (
     <Sidebar collapsible="icon">
@@ -82,19 +108,20 @@ export function AdminSidebar() {
           </span>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="truncate font-display text-sm font-semibold">Casa Nahuel</p>
+              <p className="truncate font-display text-sm font-semibold">{activePropName}</p>
               <p className="truncate text-[11px] text-muted-foreground">Panel del anfitrión</p>
             </div>
           )}
         </div>
         {!collapsed && (
-          <Select defaultValue={properties[0].id}>
+          <Select value={selectedPropertyId} onValueChange={handleSelectProperty}>
             <SelectTrigger className="h-9 w-full text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="todas">Ver Todas las Propiedades</SelectItem>
               {properties.map((p) => (
-                <SelectItem key={p.id} value={p.id} disabled={p.id !== "prop-1"}>
+                <SelectItem key={p.id} value={p.id}>
                   {p.name}
                 </SelectItem>
               ))}
