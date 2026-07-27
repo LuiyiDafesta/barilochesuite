@@ -14,6 +14,8 @@ import { Route as ReservarRouteImport } from './routes/reservar'
 import { Route as GaleriaRouteImport } from './routes/galeria'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminCalendarioRouteImport } from './routes/admin.calendario'
 
 const UbicacionRoute = UbicacionRouteImport.update({
   id: '/ubicacion',
@@ -40,40 +42,76 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCalendarioRoute = AdminCalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/galeria': typeof GaleriaRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
+  '/admin/calendario': typeof AdminCalendarioRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/galeria': typeof GaleriaRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
+  '/admin/calendario': typeof AdminCalendarioRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/galeria': typeof GaleriaRoute
   '/reservar': typeof ReservarRoute
   '/ubicacion': typeof UbicacionRoute
+  '/admin/calendario': typeof AdminCalendarioRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/galeria' | '/reservar' | '/ubicacion'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/galeria'
+    | '/reservar'
+    | '/ubicacion'
+    | '/admin/calendario'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/galeria' | '/reservar' | '/ubicacion'
-  id: '__root__' | '/' | '/admin' | '/galeria' | '/reservar' | '/ubicacion'
+  to:
+    | '/'
+    | '/galeria'
+    | '/reservar'
+    | '/ubicacion'
+    | '/admin/calendario'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/galeria'
+    | '/reservar'
+    | '/ubicacion'
+    | '/admin/calendario'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   GaleriaRoute: typeof GaleriaRoute
   ReservarRoute: typeof ReservarRoute
   UbicacionRoute: typeof UbicacionRoute
@@ -116,12 +154,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/calendario': {
+      id: '/admin/calendario'
+      path: '/calendario'
+      fullPath: '/admin/calendario'
+      preLoaderRoute: typeof AdminCalendarioRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminCalendarioRoute: typeof AdminCalendarioRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminCalendarioRoute: AdminCalendarioRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   GaleriaRoute: GaleriaRoute,
   ReservarRoute: ReservarRoute,
   UbicacionRoute: UbicacionRoute,
