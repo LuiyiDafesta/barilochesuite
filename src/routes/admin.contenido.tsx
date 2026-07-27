@@ -76,7 +76,11 @@ function Contenido() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="desc">Descripción larga</Label>
-                <Textarea id="desc" rows={8} defaultValue={property.description} />
+                <Textarea
+                  id="desc"
+                  rows={8}
+                  defaultValue={`${property.tagline}. ${property.name} está en ${property.address}, con capacidad para ${property.guests} huéspedes, ${property.bedrooms} dormitorios y ${property.bathrooms} baños.`}
+                />
               </div>
             </CardContent>
           </Card>
