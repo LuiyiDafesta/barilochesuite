@@ -21,6 +21,7 @@ import { Route as AdminConfiguracionRouteImport } from './routes/admin.configura
 import { Route as AdminConsultasRouteImport } from './routes/admin.consultas'
 import { Route as AdminContenidoRouteImport } from './routes/admin.contenido'
 import { Route as AdminGaleriaRouteImport } from './routes/admin.galeria'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminLugaresRouteImport } from './routes/admin.lugares'
 import { Route as AdminResenasRouteImport } from './routes/admin.resenas'
 import { Route as AdminReservasRouteImport } from './routes/admin.reservas'
@@ -89,6 +90,11 @@ const AdminGaleriaRoute = AdminGaleriaRouteImport.update({
   path: '/galeria',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLugaresRoute = AdminLugaresRouteImport.update({
   id: '/lugares',
   path: '/lugares',
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/admin/consultas': typeof AdminConsultasRoute
   '/admin/contenido': typeof AdminContenidoRoute
   '/admin/galeria': typeof AdminGaleriaRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/lugares': typeof AdminLugaresRoute
   '/admin/resenas': typeof AdminResenasRoute
   '/admin/reservas': typeof AdminReservasRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/admin/consultas': typeof AdminConsultasRoute
   '/admin/contenido': typeof AdminContenidoRoute
   '/admin/galeria': typeof AdminGaleriaRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/lugares': typeof AdminLugaresRoute
   '/admin/resenas': typeof AdminResenasRoute
   '/admin/reservas': typeof AdminReservasRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/admin/consultas': typeof AdminConsultasRoute
   '/admin/contenido': typeof AdminContenidoRoute
   '/admin/galeria': typeof AdminGaleriaRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/lugares': typeof AdminLugaresRoute
   '/admin/resenas': typeof AdminResenasRoute
   '/admin/reservas': typeof AdminReservasRoute
@@ -202,6 +211,7 @@ export interface FileRouteTypes {
     | '/admin/consultas'
     | '/admin/contenido'
     | '/admin/galeria'
+    | '/admin/login'
     | '/admin/lugares'
     | '/admin/resenas'
     | '/admin/reservas'
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/admin/consultas'
     | '/admin/contenido'
     | '/admin/galeria'
+    | '/admin/login'
     | '/admin/lugares'
     | '/admin/resenas'
     | '/admin/reservas'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/admin/consultas'
     | '/admin/contenido'
     | '/admin/galeria'
+    | '/admin/login'
     | '/admin/lugares'
     | '/admin/resenas'
     | '/admin/reservas'
@@ -347,6 +359,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminGaleriaRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/lugares': {
       id: '/admin/lugares'
       path: '/lugares'
@@ -406,6 +425,7 @@ interface AdminRouteChildren {
   AdminConsultasRoute: typeof AdminConsultasRoute
   AdminContenidoRoute: typeof AdminContenidoRoute
   AdminGaleriaRoute: typeof AdminGaleriaRoute
+  AdminLoginRoute: typeof AdminLoginRoute
   AdminLugaresRoute: typeof AdminLugaresRoute
   AdminResenasRoute: typeof AdminResenasRoute
   AdminReservasRoute: typeof AdminReservasRoute
@@ -423,6 +443,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminConsultasRoute: AdminConsultasRoute,
   AdminContenidoRoute: AdminContenidoRoute,
   AdminGaleriaRoute: AdminGaleriaRoute,
+  AdminLoginRoute: AdminLoginRoute,
   AdminLugaresRoute: AdminLugaresRoute,
   AdminResenasRoute: AdminResenasRoute,
   AdminReservasRoute: AdminReservasRoute,

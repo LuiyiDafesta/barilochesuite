@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Download, MoreHorizontal, Plus, Search } from "lucide-react";
+import { Download, Loader2, MoreHorizontal, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader, StatusBadge } from "@/components/admin/ui-bits";
@@ -16,41 +16,72 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { formatARS, formatDate, reservations } from "@/data/admin";
+import { formatARS, formatDate, Reservation } from "@/data/admin";
+import { reservationService } from "@/lib/services";
 
 export const Route = createFileRoute("/admin/reservas")({
   component: Reservas,
 });
 
 function Reservas() {
+  const [items, setItems] = useState<Reservation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("todas");
   const [channel, setChannel] = useState("todos");
 
+  const loadReservations = async () => {
+    try {
+      setLoading(true);
+      const data = await reservationService.getAll();
+      setItems(data);
+    } catch (e) {
+      console.error("Error cargando reservas de Supabase:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadReservations();
+  }, []);
+
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    try {
+      await reservationService.updateStatus(id, newStatus);
+      setItems((prev) => prev.map((r) => (r.id === id ? { ...r, status: newStatus as any } : r)));
+      toast.success("Estado de reserva actualizado en Supabase");
+    } catch (e) {
+      toast.error("Error al actualizar reserva");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await reservationService.delete(id);
+      setItems((prev) => prev.filter((r) => r.id !== id));
+      toast.success("Reserva eliminada de Supabase");
+    } catch (e) {
+      toast.error("Error al eliminar reserva");
+    }
+  };
+
   const rows = useMemo(
     () =>
-      reservations.filter(
+      items.filter(
         (r) =>
           r.guest.toLowerCase().includes(q.toLowerCase()) &&
           (status === "todas" || r.status === status) &&
           (channel === "todos" || r.channel === channel),
       ),
-    [q, status, channel],
+    [items, q, status, channel],
   );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Reservas"
-        description={`${reservations.length} reservas registradas en todos los canales`}
+        description={`${items.length} reservas sincronizadas en tiempo real con Supabase`}
         actions={
           <>
             <Button variant="outline" size="sm" className="rounded-full" onClick={() => toast("Exportando CSV...")}>
@@ -105,93 +136,84 @@ function Reservas() {
             </Select>
           </div>
 
-          <div className="mt-5 overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Check In</TableHead>
-                  <TableHead>Check Out</TableHead>
-                  <TableHead className="text-center">Personas</TableHead>
-                  <TableHead className="text-right">Importe</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Origen</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>
-                      <p className="font-medium">{r.guest}</p>
-                      <p className="text-xs text-muted-foreground">{r.code}</p>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-muted-foreground">{formatDate(r.checkIn)}</TableCell>
-                    <TableCell className="whitespace-nowrap text-muted-foreground">{formatDate(r.checkOut)}</TableCell>
-                    <TableCell className="text-center">{r.guests || "—"}</TableCell>
-                    <TableCell className="whitespace-nowrap text-right">
-                      {r.amount ? formatARS(r.amount) : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={r.status} />
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="rounded-full font-normal">
-                        {r.channel}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label="Acciones">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => toast("Abriendo detalle")}>Ver detalle</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast("Editar reserva")}>Editar</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toast.success("Mensaje enviado por WhatsApp")}>
-                            Enviar WhatsApp
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => toast("Reserva cancelada")}
-                          >
-                            Cancelar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-teal" />
+            </div>
+          ) : (
+            <div className="mt-5 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Check In</TableHead>
+                    <TableHead>Check Out</TableHead>
+                    <TableHead className="text-center">Personas</TableHead>
+                    <TableHead className="text-right">Importe</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Origen</TableHead>
+                    <TableHead className="w-10" />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>
+                        <p className="font-medium">{r.guest}</p>
+                        <p className="text-xs text-muted-foreground">{r.code}</p>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">{formatDate(r.checkIn)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">{formatDate(r.checkOut)}</TableCell>
+                      <TableCell className="text-center">{r.guests || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right">
+                        {r.amount ? formatARS(r.amount) : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={r.status} />
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="rounded-full font-normal">
+                          {r.channel}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" aria-label="Acciones">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleUpdateStatus(r.id, "confirmada")}>
+                              Marcar Confirmada
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUpdateStatus(r.id, "pendiente")}>
+                              Marcar Pendiente
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleUpdateStatus(r.id, "cancelada")}>
+                              Marcar Cancelada
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => handleDelete(r.id)}
+                            >
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
 
-            {rows.length === 0 && (
-              <p className="py-16 text-center text-sm text-muted-foreground">
-                No hay reservas que coincidan con los filtros.
-              </p>
-            )}
-          </div>
-
-          <Pagination className="mt-6">
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious href="#" />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href="#" isActive>
-                  1
-                </PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink href="#">2</PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext href="#" />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+              {rows.length === 0 && (
+                <p className="py-16 text-center text-sm text-muted-foreground">
+                  No hay reservas que coincidan con los filtros.
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

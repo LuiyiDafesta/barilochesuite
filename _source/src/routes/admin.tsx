@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Bell, Search } from "lucide-react";
+import { Bell, LogOut, Search, User } from "lucide-react";
+import { toast } from "sonner";
 
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -22,6 +23,15 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -63,13 +73,36 @@ const labels: Record<string, string> = {
   resenas: "Reseñas",
   lugares: "Lugares cercanos",
   configuracion: "Configuración",
+  login: "Inicio de Sesión",
 };
 
 function AdminLayout() {
   const [open, setOpen] = useState(false);
+  const [session, setSession] = useState<any>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const segments = pathname.split("/").filter(Boolean);
+  const isLoginPage = pathname.endsWith("/login");
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setCheckingAuth(false);
+      if (!session && !isLoginPage) {
+        navigate({ to: "/admin/login" });
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (!session && !isLoginPage) {
+        navigate({ to: "/admin/login" });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [isLoginPage, navigate]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -81,6 +114,17 @@ function AdminLayout() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Sesión cerrada correctamente");
+    navigate({ to: "/admin/login" });
+  };
+
+  // Si estamos en la página de login, renderizar únicamente el formulario
+  if (isLoginPage) {
+    return <Outlet />;
+  }
 
   return (
     <SidebarProvider>
@@ -123,9 +167,30 @@ function AdminLayout() {
               <Button variant="ghost" size="icon" aria-label="Notificaciones">
                 <Bell className="h-4 w-4" />
               </Button>
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-xs text-primary-foreground">MA</AvatarFallback>
-              </Avatar>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-xs text-primary-foreground">
+                        {session?.user?.email ? session.user.email[0].toUpperCase() : "A"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">Administrador</p>
+                      <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" /> Cerrar sesión
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
 
