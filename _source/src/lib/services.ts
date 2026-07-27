@@ -160,6 +160,11 @@ export const settingService = {
     const { data, error } = await supabase.from("site_settings").select("*").eq("id", "default").single();
     if (error || !data) {
       return {
+        businessName: "Bariloche Suite",
+        address: "Av. Bustillo Km 6,400 – San Carlos de Bariloche, Río Negro",
+        whatsapp: "+54 9 294 400 1234",
+        email: "reservas@barilochesuite.com",
+        houseRules: "Check in 15:00 · Check out 11:00. No se permiten fiestas ni eventos.",
         basePrice: 185000,
         cleaningFee: 45000,
         weekendSurchargePercent: 15,
@@ -176,6 +181,11 @@ export const settingService = {
       };
     }
     return {
+      businessName: data.business_name || "Bariloche Suite",
+      address: data.address || "Av. Bustillo Km 6,400 – San Carlos de Bariloche, Río Negro",
+      whatsapp: data.whatsapp || "+54 9 294 400 1234",
+      email: data.email || "reservas@barilochesuite.com",
+      houseRules: data.house_rules || "Check in 15:00 · Check out 11:00. No se permiten fiestas ni eventos.",
       basePrice: data.base_price != null ? Number(data.base_price) : 185000,
       cleaningFee: data.cleaning_fee != null ? Number(data.cleaning_fee) : 45000,
       weekendSurchargePercent: data.weekend_surcharge_percent != null ? Number(data.weekend_surcharge_percent) : 15,
@@ -194,6 +204,11 @@ export const settingService = {
   async update(settings: any) {
     const { error } = await supabase.from("site_settings").upsert({
       id: "default",
+      business_name: settings.businessName,
+      address: settings.address,
+      whatsapp: settings.whatsapp,
+      email: settings.email,
+      house_rules: settings.houseRules,
       base_price: settings.basePrice,
       cleaning_fee: settings.cleaningFee,
       weekend_surcharge_percent: settings.weekendSurchargePercent,

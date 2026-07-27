@@ -15,8 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { formatARS, integrations } from "@/data/admin";
-import { property } from "@/data/site";
-import { PropertyItem, propertyService } from "@/lib/services";
+import { PropertyItem, propertyService, settingService } from "@/lib/services";
 
 export const Route = createFileRoute("/admin/configuracion")({
   component: Configuracion,
@@ -24,27 +23,66 @@ export const Route = createFileRoute("/admin/configuracion")({
 
 function Configuracion() {
   const [properties, setProperties] = useState<PropertyItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingProps, setLoadingProps] = useState(true);
+
+  // Estado Tab General (Datos del negocio)
+  const [businessName, setBusinessName] = useState("");
+  const [address, setAddress] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [email, setEmail] = useState("");
+  const [houseRules, setHouseRules] = useState("");
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   // Modal Crear / Editar Propiedad
   const [editingProp, setEditingProp] = useState<Partial<PropertyItem> | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const loadProperties = async () => {
+  const loadAll = async () => {
     try {
-      setLoading(true);
-      const data = await propertyService.getAll();
-      setProperties(data);
+      setLoadingProps(true);
+      setLoadingSettings(true);
+      const [propsData, settsData] = await Promise.all([
+        propertyService.getAll(),
+        settingService.get(),
+      ]);
+      setProperties(propsData);
+      setBusinessName(settsData.businessName || "Bariloche Suite");
+      setAddress(settsData.address || "");
+      setWhatsapp(settsData.whatsapp || "");
+      setEmail(settsData.email || "");
+      setHouseRules(settsData.houseRules || "");
     } catch (e) {
-      console.error("Error al cargar propiedades de Supabase:", e);
+      console.error("Error al cargar configuración de Supabase:", e);
     } finally {
-      setLoading(false);
+      setLoadingProps(false);
+      setLoadingSettings(false);
     }
   };
 
   useEffect(() => {
-    loadProperties();
+    loadAll();
   }, []);
+
+  const handleSaveGeneralSettings = async () => {
+    try {
+      setSavingSettings(true);
+      const current = await settingService.get();
+      await settingService.update({
+        ...current,
+        businessName,
+        address,
+        whatsapp,
+        email,
+        houseRules,
+      });
+      toast.success("Datos del negocio guardados en Supabase");
+    } catch (e) {
+      toast.error("Error al guardar datos del negocio");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   const handleOpenModal = (p?: PropertyItem) => {
     if (p) {
@@ -97,19 +135,86 @@ function Configuracion() {
         title="Configuración"
         description="Datos del negocio, notificaciones, integraciones y gestión multipropiedad."
         actions={
-          <Button size="sm" className="rounded-full" onClick={() => toast.success("Configuración guardada")}>
-            <Save className="mr-1.5 h-3.5 w-3.5" /> Guardar
+          <Button size="sm" className="rounded-full" onClick={handleSaveGeneralSettings} disabled={savingSettings}>
+            {savingSettings ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
+            Guardar Cambios
           </Button>
         }
       />
 
-      <Tabs defaultValue="propiedades">
+      <Tabs defaultValue="general">
         <TabsList>
-          <TabsTrigger value="propiedades">Propiedades (Multipropiedad)</TabsTrigger>
           <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="propiedades">Propiedades (Multipropiedad)</TabsTrigger>
           <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
           <TabsTrigger value="integraciones">Integraciones</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="general" className="mt-6">
+          <Card className="border-border/70 shadow-soft">
+            <CardHeader>
+              <CardTitle className="font-display text-base">Datos del alojamiento</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {loadingSettings ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-teal" />
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="nombre">Nombre comercial</Label>
+                    <Input
+                      id="nombre"
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dir">Dirección</Label>
+                    <Input
+                      id="dir"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="wsp">WhatsApp</Label>
+                    <Input
+                      id="wsp"
+                      value={whatsapp}
+                      onChange={(e) => setWhatsapp(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mail">Email de contacto</Label>
+                    <Input
+                      id="mail"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="politicas">Políticas de la casa</Label>
+                    <Textarea
+                      id="politicas"
+                      rows={4}
+                      value={houseRules}
+                      onChange={(e) => setHouseRules(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 pt-2">
+                    <Button onClick={handleSaveGeneralSettings} disabled={savingSettings} className="rounded-full">
+                      {savingSettings && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                      Guardar Datos del Alojamiento
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="propiedades" className="mt-6 space-y-6">
           <Card className="border-border/70 shadow-soft">
@@ -125,7 +230,7 @@ function Configuracion() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {loading ? (
+              {loadingProps ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-6 w-6 animate-spin text-teal" />
                 </div>
@@ -307,32 +412,6 @@ function Configuracion() {
           </Dialog>
         </TabsContent>
 
-        <TabsContent value="general" className="mt-6">
-          <Card className="border-border/70 shadow-soft">
-            <CardHeader>
-              <CardTitle className="font-display text-base">Datos del alojamiento</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="nombre">Nombre comercial</Label>
-                <Input id="nombre" defaultValue={property.name} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dir">Dirección</Label>
-                <Input id="dir" defaultValue={property.address} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="wsp">WhatsApp</Label>
-                <Input id="wsp" defaultValue={property.whatsapp} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mail">Email de contacto</Label>
-                <Input id="mail" defaultValue={property.email} />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="notificaciones" className="mt-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader>
@@ -342,7 +421,7 @@ function Configuracion() {
               {[
                 { label: "Nueva consulta por email", detail: "Recibí un aviso apenas llega un lead" },
                 { label: "Nueva consulta por WhatsApp", detail: "Notificación instantánea al celular" },
-              ].map((n, i, arr) => (
+              ].map((n) => (
                 <div key={n.label}>
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">

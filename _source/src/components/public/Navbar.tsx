@@ -5,7 +5,8 @@ import { KeyRound, Menu, Mountain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { property } from "@/data/site";
+import { property as defaultProperty } from "@/data/site";
+import { settingService } from "@/lib/services";
 
 const links = [
   { to: "/", label: "Inicio" },
@@ -18,9 +19,20 @@ const links = [
 export function Navbar({ transparent = false }: { transparent?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [brandName, setBrandName] = useState(defaultProperty.name);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const s = await settingService.get();
+        if (s.businessName) setBrandName(s.businessName);
+      } catch (e) {
+        console.error("Error al cargar ajustes en Navbar:", e);
+      }
+    };
+    loadSettings();
+
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -55,7 +67,7 @@ export function Navbar({ transparent = false }: { transparent?: boolean }) {
                 solid ? "text-foreground" : "text-white",
               )}
             >
-              {property.name}
+              {brandName}
             </span>
             <span
               className={cn(
@@ -123,7 +135,7 @@ export function Navbar({ transparent = false }: { transparent?: boolean }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[85vw] max-w-sm">
-              <SheetTitle className="px-5 pt-5 font-display text-lg">{property.name}</SheetTitle>
+              <SheetTitle className="px-5 pt-5 font-display text-lg">{brandName}</SheetTitle>
               <nav className="mt-6 flex flex-col gap-1 px-3">
                 {links.map((l) => (
                   <Link
