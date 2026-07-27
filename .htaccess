@@ -1,27 +1,27 @@
 <IfModule mod_rewrite.c>
-  Engine On / RewriteEngine On
   RewriteEngine On
   RewriteBase /
 
-  # Handle PHP files directly
+  # Permitir acceso directo a scripts PHP (upload.php, contact.php, etc)
   RewriteCond %{REQUEST_FILENAME} -f
-  RewriteCond %{REQUEST_FILENAME} \.php$
+  RewriteCond %{REQUEST_FILENAME} \.php$ [NC]
   RewriteRule ^ - [L]
 
-  # Existing files and directories should be served directly
+  # Servir archivos o directorios existentes directamente
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Route all other requests to index.html for SPA
+  # Redirigir todas las demás rutas dinámicas a index.html para la SPA
   RewriteRule ^ index.html [L]
 </IfModule>
 
-# Options and compression settings
+# Compresión GZIP / Deflate
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json
 </IfModule>
 
+# Caché de archivos estáticos
 <IfModule mod_headers.c>
   <FilesMatch "\.(ico|jpe?g|png|gif|swf|css|js|svg|woff2?)$">
     Header set Cache-Control "max-age=31536000, public"
