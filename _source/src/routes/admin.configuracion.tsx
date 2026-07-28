@@ -1,12 +1,26 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Edit, KeyRound, Loader2, Plus, Save, Star, Wifi } from "lucide-react";
+import {
+  Code,
+  Edit,
+  Globe,
+  KeyRound,
+  Languages,
+  Loader2,
+  Palette,
+  Plus,
+  Save,
+  Search,
+  Webhook,
+  Wifi,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/admin/ui-bits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +39,7 @@ function Configuracion() {
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [loadingProps, setLoadingProps] = useState(true);
 
-  // Estado Tab General (Datos del negocio)
+  // Estado Tab General
   const [businessName, setBusinessName] = useState("");
   const [address, setAddress] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -33,6 +47,36 @@ function Configuracion() {
   const [houseRules, setHouseRules] = useState("");
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
+
+  // Branding & Themeing
+  const [logoUrl, setLogoUrl] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("215 45% 20%");
+  const [accentColor, setAccentColor] = useState("174 62% 47%");
+
+  // Idiomas
+  const [enabledLangs, setEnabledLangs] = useState<string[]>(["es"]);
+
+  // Webhooks CRM
+  const [whLead, setWhLead] = useState("");
+  const [whResCreated, setWhResCreated] = useState("");
+  const [whResConfirmed, setWhResConfirmed] = useState("");
+  const [whResCancelled, setWhResCancelled] = useState("");
+
+  // Analytics & Tracking
+  const [gaId, setGaId] = useState("");
+  const [gtmId, setGtmId] = useState("");
+  const [pixelId, setPixelId] = useState("");
+  const [customScript, setCustomScript] = useState("");
+
+  // SEO & Geo
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDesc, setMetaDesc] = useState("");
+  const [keywords, setKeywords] = useState("");
+  const [ogImage, setOgImage] = useState("");
+  const [faviconUrl, setFaviconUrl] = useState("");
+  const [lat, setLat] = useState(-41.1335);
+  const [lng, setLng] = useState(-71.3103);
+  const [currency, setCurrency] = useState("ARS");
 
   // Modal Crear / Editar Propiedad
   const [editingProp, setEditingProp] = useState<Partial<PropertyItem> | null>(null);
@@ -47,13 +91,39 @@ function Configuracion() {
         settingService.get(),
       ]);
       setProperties(propsData);
+
       setBusinessName(settsData.businessName || "Bariloche Suite");
       setAddress(settsData.address || "");
       setWhatsapp(settsData.whatsapp || "");
       setEmail(settsData.email || "");
       setHouseRules(settsData.houseRules || "");
+
+      setLogoUrl(settsData.logoUrl || "");
+      setPrimaryColor(settsData.primaryColor || "215 45% 20%");
+      setAccentColor(settsData.accentColor || "174 62% 47%");
+
+      setEnabledLangs(settsData.enabledLanguages || ["es"]);
+
+      setWhLead(settsData.webhookLeadCreated || "");
+      setWhResCreated(settsData.webhookReservationCreated || "");
+      setWhResConfirmed(settsData.webhookReservationConfirmed || "");
+      setWhResCancelled(settsData.webhookReservationCancelled || "");
+
+      setGaId(settsData.googleAnalyticsId || "");
+      setGtmId(settsData.googleTagManagerId || "");
+      setPixelId(settsData.metaPixelId || "");
+      setCustomScript(settsData.customHeadScript || "");
+
+      setMetaTitle(settsData.metaTitle || "");
+      setMetaDesc(settsData.metaDescription || "");
+      setKeywords(settsData.keywords || "");
+      setOgImage(settsData.ogImage || "");
+      setFaviconUrl(settsData.faviconUrl || "");
+      setLat(settsData.latitude || -41.1335);
+      setLng(settsData.longitude || -71.3103);
+      setCurrency(settsData.currencyCode || "ARS");
     } catch (e) {
-      console.error("Error al cargar configuración de Supabase:", e);
+      console.error("Error al cargar configuración:", e);
     } finally {
       setLoadingProps(false);
       setLoadingSettings(false);
@@ -75,13 +145,40 @@ function Configuracion() {
         whatsapp,
         email,
         houseRules,
+        logoUrl,
+        primaryColor,
+        accentColor,
+        enabledLanguages: enabledLangs,
+        webhookLeadCreated: whLead,
+        webhookReservationCreated: whResCreated,
+        webhookReservationConfirmed: whResConfirmed,
+        webhookReservationCancelled: whResCancelled,
+        googleAnalyticsId: gaId,
+        googleTagManagerId: gtmId,
+        metaPixelId: pixelId,
+        customHeadScript: customScript,
+        metaTitle,
+        metaDescription: metaDesc,
+        keywords,
+        ogImage,
+        faviconUrl,
+        latitude: lat,
+        longitude: lng,
+        currencyCode: currency,
       });
-      toast.success("Datos del negocio guardados en Supabase");
+      toast.success("Configuración White-Label guardada en el sistema");
     } catch (e) {
-      toast.error("Error al guardar datos del negocio");
+      toast.error("Error al guardar configuración");
     } finally {
       setSavingSettings(false);
     }
+  };
+
+  const toggleLanguage = (lang: string) => {
+    if (lang === "es") return; // Español siempre activo
+    setEnabledLangs((prev) =>
+      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
+    );
   };
 
   const handleOpenModal = (p?: PropertyItem) => {
@@ -95,6 +192,7 @@ function Configuracion() {
         maxGuests: 4,
         petsAllowed: false,
         isMain: properties.length === 0,
+        active: true,
         wifiNetwork: "",
         wifiPassword: "",
         lockCode: "",
@@ -115,11 +213,11 @@ function Configuracion() {
       if (editingProp.id) {
         const updated = await propertyService.update(editingProp.id, editingProp);
         setProperties((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-        toast.success("Propiedad actualizada en Supabase");
+        toast.success("Propiedad actualizada");
       } else {
         const created = await propertyService.create(editingProp);
         setProperties((prev) => [...prev, created]);
-        toast.success("Nueva propiedad registrada en Supabase");
+        toast.success("Nueva propiedad registrada");
       }
       setEditingProp(null);
     } catch (e: any) {
@@ -132,28 +230,32 @@ function Configuracion() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Configuración"
-        description="Datos del negocio, notificaciones, integraciones y gestión multipropiedad."
+        title="Configuración White-Label"
+        description="Identidad de marca, idiomas, integraciones CRM, analítica SPA y SEO."
         actions={
           <Button size="sm" className="rounded-full" onClick={handleSaveGeneralSettings} disabled={savingSettings}>
             {savingSettings ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
-            Guardar Cambios
+            Guardar Configuración
           </Button>
         }
       />
 
       <Tabs defaultValue="general">
-        <TabsList>
+        <TabsList className="flex flex-wrap gap-1">
           <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="propiedades">Propiedades (Multipropiedad)</TabsTrigger>
-          <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
-          <TabsTrigger value="integraciones">Integraciones</TabsTrigger>
+          <TabsTrigger value="branding"><Palette className="mr-1.5 h-3.5 w-3.5 text-teal" /> Branding</TabsTrigger>
+          <TabsTrigger value="idiomas"><Languages className="mr-1.5 h-3.5 w-3.5 text-teal" /> Idiomas</TabsTrigger>
+          <TabsTrigger value="webhooks"><Webhook className="mr-1.5 h-3.5 w-3.5 text-teal" /> Webhooks CRM</TabsTrigger>
+          <TabsTrigger value="analytics"><Globe className="mr-1.5 h-3.5 w-3.5 text-teal" /> Tracking & Analytics</TabsTrigger>
+          <TabsTrigger value="seo"><Search className="mr-1.5 h-3.5 w-3.5 text-teal" /> SEO & Geo</TabsTrigger>
+          <TabsTrigger value="propiedades">Propiedades</TabsTrigger>
         </TabsList>
 
+        {/* Tab General */}
         <TabsContent value="general" className="mt-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader>
-              <CardTitle className="font-display text-base">Datos del alojamiento</CardTitle>
+              <CardTitle className="font-display text-base">Datos de la empresa / alojamiento</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {loadingSettings ? (
@@ -164,51 +266,23 @@ function Configuracion() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="nombre">Nombre comercial</Label>
-                    <Input
-                      id="nombre"
-                      value={businessName}
-                      onChange={(e) => setBusinessName(e.target.value)}
-                    />
+                    <Input id="nombre" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dir">Dirección</Label>
-                    <Input
-                      id="dir"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                    />
+                    <Label htmlFor="dir">Dirección principal</Label>
+                    <Input id="dir" value={address} onChange={(e) => setAddress(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="wsp">WhatsApp</Label>
-                    <Input
-                      id="wsp"
-                      value={whatsapp}
-                      onChange={(e) => setWhatsapp(e.target.value)}
-                    />
+                    <Label htmlFor="wsp">WhatsApp comercial</Label>
+                    <Input id="wsp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="mail">Email de contacto</Label>
-                    <Input
-                      id="mail"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
+                    <Label htmlFor="mail">Email de reservas</Label>
+                    <Input id="mail" value={email} onChange={(e) => setEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="politicas">Políticas de la casa</Label>
-                    <Textarea
-                      id="politicas"
-                      rows={4}
-                      value={houseRules}
-                      onChange={(e) => setHouseRules(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2 pt-2">
-                    <Button onClick={handleSaveGeneralSettings} disabled={savingSettings} className="rounded-full">
-                      {savingSettings && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                      Guardar Datos del Alojamiento
-                    </Button>
+                    <Textarea id="politicas" rows={3} value={houseRules} onChange={(e) => setHouseRules(e.target.value)} />
                   </div>
                 </div>
               )}
@@ -216,6 +290,187 @@ function Configuracion() {
           </Card>
         </TabsContent>
 
+        {/* Tab Branding */}
+        <TabsContent value="branding" className="mt-6">
+          <Card className="border-border/70 shadow-soft">
+            <CardHeader>
+              <CardTitle className="font-display text-base">Personalización de Marca y Colores</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="logo">URL del Logo (SVG o PNG transparente)</Label>
+                  <Input id="logo" placeholder="https://miempresa.com/logo.svg" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} />
+                  <p className="text-[11px] text-muted-foreground">Si no se especifica, se utilizará el logo e icono por defecto.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pColor">Color Primario (HSL o Hex)</Label>
+                  <Input id="pColor" placeholder="215 45% 20%" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="aColor">Color de Acento (Teal / Lake)</Label>
+                  <Input id="aColor" placeholder="174 62% 47%" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab Idiomas */}
+        <TabsContent value="idiomas" className="mt-6">
+          <Card className="border-border/70 shadow-soft">
+            <CardHeader>
+              <CardTitle className="font-display text-base">Idiomas Habilitados en la Web</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Seleccioná qué idiomas estarán disponibles para los visitantes. Si solo seleccionás **Español**, el selector de idiomas en la cabecera **se ocultará automáticamente**.
+              </p>
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center gap-3 rounded-xl border p-3 bg-muted/20">
+                  <Checkbox checked disabled />
+                  <div>
+                    <p className="text-sm font-semibold">🇪🇸 Español (Principal)</p>
+                    <p className="text-xs text-muted-foreground">Siempre activo por defecto.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 rounded-xl border p-3">
+                  <Checkbox
+                    id="enLang"
+                    checked={enabledLangs.includes("en")}
+                    onCheckedChange={() => toggleLanguage("en")}
+                  />
+                  <Label htmlFor="enLang" className="cursor-pointer">
+                    <p className="text-sm font-semibold">🇬🇧 English (Inglés)</p>
+                    <p className="text-xs text-muted-foreground">Habilita selector [EN] en el Navbar y traducciones.</p>
+                  </Label>
+                </div>
+
+                <div className="flex items-center gap-3 rounded-xl border p-3">
+                  <Checkbox
+                    id="ptLang"
+                    checked={enabledLangs.includes("pt")}
+                    onCheckedChange={() => toggleLanguage("pt")}
+                  />
+                  <Label htmlFor="ptLang" className="cursor-pointer">
+                    <p className="text-sm font-semibold">🇧🇷 Português (Portugués)</p>
+                    <p className="text-xs text-muted-foreground">Habilita selector [PT] en el Navbar para turismo de Brasil.</p>
+                  </Label>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab Webhooks CRM */}
+        <TabsContent value="webhooks" className="mt-6">
+          <Card className="border-border/70 shadow-soft">
+            <CardHeader>
+              <CardTitle className="font-display text-base">Webhooks de Automatización (Make / Zapier / n8n / CRM)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Configurá las URLs de webhook donde el sistema enviará notificaciones JSON automáticas ante cada evento.
+              </p>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="whLead">Webhook: Nueva Consulta (Lead)</Label>
+                  <Input id="whLead" placeholder="https://hook.make.com/..." value={whLead} onChange={(e) => setWhLead(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="whResCreated">Webhook: Reserva Generada</Label>
+                  <Input id="whResCreated" placeholder="https://hook.make.com/..." value={whResCreated} onChange={(e) => setWhResCreated(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="whResConfirmed">Webhook: Reserva Confirmada</Label>
+                  <Input id="whResConfirmed" placeholder="https://hook.make.com/..." value={whResConfirmed} onChange={(e) => setWhResConfirmed(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="whResCancelled">Webhook: Reserva Cancelada</Label>
+                  <Input id="whResCancelled" placeholder="https://hook.make.com/..." value={whResCancelled} onChange={(e) => setWhResCancelled(e.target.value)} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab Tracking & Analytics */}
+        <TabsContent value="analytics" className="mt-6">
+          <Card className="border-border/70 shadow-soft">
+            <CardHeader>
+              <CardTitle className="font-display text-base">Métricas, Google Analytics y Pixels</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="ga">Google Analytics ID</Label>
+                  <Input id="ga" placeholder="G-XXXXXXXXXX" value={gaId} onChange={(e) => setGaId(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gtm">Google Tag Manager ID</Label>
+                  <Input id="gtm" placeholder="GTM-XXXXXXX" value={gtmId} onChange={(e) => setGtmId(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pixel">Meta Pixel ID (Facebook)</Label>
+                  <Input id="pixel" placeholder="1234567890" value={pixelId} onChange={(e) => setPixelId(e.target.value)} />
+                </div>
+                <div className="space-y-2 sm:col-span-3">
+                  <Label htmlFor="script">Script Personalizado de Seguimiento (&lt;head&gt;)</Label>
+                  <Textarea id="script" rows={3} placeholder="<!-- Script de tracking -->" value={customScript} onChange={(e) => setCustomScript(e.target.value)} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab SEO & Geo */}
+        <TabsContent value="seo" className="mt-6">
+          <Card className="border-border/70 shadow-soft">
+            <CardHeader>
+              <CardTitle className="font-display text-base">SEO, OpenGraph y Geolocalización</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="mTitle">Meta Title Global</Label>
+                  <Input id="mTitle" value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="mDesc">Meta Description</Label>
+                  <Textarea id="mDesc" rows={2} value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="kw">Palabras Clave (Keywords)</Label>
+                  <Input id="kw" value={keywords} onChange={(e) => setKeywords(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ogImg">Imagen OpenGraph (WhatsApp / Redes)</Label>
+                  <Input id="ogImg" placeholder="https://..." value={ogImage} onChange={(e) => setOgImage(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fav">Favicon / Icono URL</Label>
+                  <Input id="fav" placeholder="https://..." value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lat">Latitud GEO</Label>
+                  <Input id="lat" type="number" step="any" value={lat} onChange={(e) => setLat(Number(e.target.value))} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lng">Longitud GEO</Label>
+                  <Input id="lng" type="number" step="any" value={lng} onChange={(e) => setLng(Number(e.target.value))} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="curr">Código de Moneda</Label>
+                  <Input id="curr" placeholder="ARS / USD / EUR" value={currency} onChange={(e) => setCurrency(e.target.value)} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab Propiedades */}
         <TabsContent value="propiedades" className="mt-6 space-y-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader className="flex flex-row items-center justify-between">
@@ -237,27 +492,16 @@ function Configuracion() {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
                   {properties.map((p) => (
-                    <div
-                      key={p.id}
-                      className="rounded-2xl border border-border bg-card p-5 space-y-4 shadow-soft"
-                    >
+                    <div key={p.id} className="rounded-2xl border border-border bg-card p-5 space-y-4 shadow-soft">
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-display text-base font-semibold">{p.name}</p>
-                            {p.isMain && (
-                              <Badge className="bg-teal text-teal-foreground text-[10px]">
-                                Principal
-                              </Badge>
-                            )}
+                            {p.isMain && <Badge className="bg-teal text-teal-foreground text-[10px]">Principal</Badge>}
                             {p.active === false ? (
-                              <Badge variant="outline" className="border-warning/50 text-warning text-[10px]">
-                                Pausada (Standby)
-                              </Badge>
+                              <Badge variant="outline" className="border-warning/50 text-warning text-[10px]">Pausada (Standby)</Badge>
                             ) : (
-                              <Badge className="bg-success text-success-foreground text-[10px]">
-                                Publicada
-                              </Badge>
+                              <Badge className="bg-success text-success-foreground text-[10px]">Publicada</Badge>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">{p.address}</p>
@@ -266,31 +510,15 @@ function Configuracion() {
                           <Edit className="h-4 w-4" />
                         </Button>
                       </div>
-
                       <Separator />
-
                       <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-muted-foreground">Capacidad:</span>{" "}
-                          <span className="font-medium">{p.maxGuests} personas</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Mascotas:</span>{" "}
-                          <span className="font-medium">{p.petsAllowed ? "Sí permite 🐾" : "No"}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Precio base:</span>{" "}
-                          <span className="font-semibold text-teal">{formatARS(p.basePrice)}</span>
-                        </div>
+                        <div><span className="text-muted-foreground">Capacidad:</span> <span className="font-medium">{p.maxGuests} personas</span></div>
+                        <div><span className="text-muted-foreground">Mascotas:</span> <span className="font-medium">{p.petsAllowed ? "Sí permite 🐾" : "No"}</span></div>
+                        <div><span className="text-muted-foreground">Precio base:</span> <span className="font-semibold text-teal">{formatARS(p.basePrice)}</span></div>
                       </div>
-
                       <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-1 text-xs">
-                        <p className="flex items-center gap-1.5 font-medium text-foreground">
-                          <Wifi className="h-3.5 w-3.5 text-teal" /> WiFi: {p.wifiNetwork || "Sin definir"}
-                        </p>
-                        <p className="flex items-center gap-1.5 font-medium text-foreground">
-                          <KeyRound className="h-3.5 w-3.5 text-teal" /> Cerradura / Safe: {p.lockCode || "Sin definir"}
-                        </p>
+                        <p className="flex items-center gap-1.5 font-medium text-foreground"><Wifi className="h-3.5 w-3.5 text-teal" /> WiFi: {p.wifiNetwork || "Sin definir"}</p>
+                        <p className="flex items-center gap-1.5 font-medium text-foreground"><KeyRound className="h-3.5 w-3.5 text-teal" /> Cerradura: {p.lockCode || "Sin definir"}</p>
                       </div>
                     </div>
                   ))}
@@ -303,84 +531,29 @@ function Configuracion() {
           <Dialog open={editingProp !== null} onOpenChange={(o) => !o && setEditingProp(null)}>
             <DialogContent className="sm:max-w-xl">
               <DialogHeader>
-                <DialogTitle className="font-display">
-                  {editingProp?.id ? "Editar Propiedad" : "Nueva Propiedad"}
-                </DialogTitle>
-                <DialogDescription>
-                  Configurá los datos operativos y credenciales para el huésped.
-                </DialogDescription>
+                <DialogTitle className="font-display">{editingProp?.id ? "Editar Propiedad" : "Nueva Propiedad"}</DialogTitle>
+                <DialogDescription>Configurá los datos operativos y credenciales para el huésped.</DialogDescription>
               </DialogHeader>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="pName">Nombre de la propiedad *</Label>
-                  <Input
-                    id="pName"
-                    placeholder="ej: Casa Nahuel / Loft Catedral"
-                    value={editingProp?.name || ""}
-                    onChange={(e) => setEditingProp((prev) => ({ ...prev, name: e.target.value }))}
-                  />
+                  <Input id="pName" placeholder="ej: Casa Nahuel" value={editingProp?.name || ""} onChange={(e) => setEditingProp((prev) => ({ ...prev, name: e.target.value }))} />
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="pAddress">Dirección o Ubicación *</Label>
-                  <Input
-                    id="pAddress"
-                    placeholder="ej: Av. Bustillo Km 6,400"
-                    value={editingProp?.address || ""}
-                    onChange={(e) => setEditingProp((prev) => ({ ...prev, address: e.target.value }))}
-                  />
+                  <Input id="pAddress" placeholder="ej: Av. Bustillo Km 6,400" value={editingProp?.address || ""} onChange={(e) => setEditingProp((prev) => ({ ...prev, address: e.target.value }))} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="pMaxGuests">Capacidad Máxima</Label>
-                  <Input
-                    id="pMaxGuests"
-                    type="number"
-                    min={1}
-                    value={editingProp?.maxGuests || 4}
-                    onChange={(e) => setEditingProp((prev) => ({ ...prev, maxGuests: Number(e.target.value) }))}
-                  />
+                  <Input id="pMaxGuests" type="number" min={1} value={editingProp?.maxGuests || 4} onChange={(e) => setEditingProp((prev) => ({ ...prev, maxGuests: Number(e.target.value) }))} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pBasePrice">Precio Base por Noche (ARS)</Label>
-                  <Input
-                    id="pBasePrice"
-                    type="number"
-                    value={editingProp?.basePrice || 185000}
-                    onChange={(e) => setEditingProp((prev) => ({ ...prev, basePrice: Number(e.target.value) }))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="pWifiNet">Red WiFi</Label>
-                  <Input
-                    id="pWifiNet"
-                    placeholder="ej: CasaNahuel_5G"
-                    value={editingProp?.wifiNetwork || ""}
-                    onChange={(e) => setEditingProp((prev) => ({ ...prev, wifiNetwork: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="pWifiPass">Clave WiFi</Label>
-                  <Input
-                    id="pWifiPass"
-                    placeholder="ej: Nahuel2026"
-                    value={editingProp?.wifiPassword || ""}
-                    onChange={(e) => setEditingProp((prev) => ({ ...prev, wifiPassword: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="pLockCode">Código de Cerradura / Caja Fuerte</Label>
-                  <Input
-                    id="pLockCode"
-                    placeholder="ej: 4829#"
-                    value={editingProp?.lockCode || ""}
-                    onChange={(e) => setEditingProp((prev) => ({ ...prev, lockCode: e.target.value }))}
-                  />
+                  <Label htmlFor="pBasePrice">Precio Base (ARS)</Label>
+                  <Input id="pBasePrice" type="number" value={editingProp?.basePrice || 185000} onChange={(e) => setEditingProp((prev) => ({ ...prev, basePrice: Number(e.target.value) }))} />
                 </div>
 
                 <div className="flex items-center justify-between rounded-xl border border-border p-3 sm:col-span-2 bg-muted/20">
@@ -388,10 +561,7 @@ function Configuracion() {
                     <p className="text-xs font-semibold">¿Publicada y Activa en la Web?</p>
                     <p className="text-[11px] text-muted-foreground">Si se desactiva, la propiedad queda en Standby y se oculta de toda la web pública.</p>
                   </div>
-                  <Switch
-                    checked={editingProp?.active !== false}
-                    onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, active: val }))}
-                  />
+                  <Switch checked={editingProp?.active !== false} onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, active: val }))} />
                 </div>
 
                 <div className="flex items-center justify-between rounded-xl border border-border p-3 sm:col-span-2">
@@ -399,78 +569,28 @@ function Configuracion() {
                     <p className="text-xs font-semibold">¿Admite Mascotas?</p>
                     <p className="text-[11px] text-muted-foreground">Muestra icono de pet-friendly al huésped.</p>
                   </div>
-                  <Switch
-                    checked={editingProp?.petsAllowed || false}
-                    onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, petsAllowed: val }))}
-                  />
+                  <Switch checked={editingProp?.petsAllowed || false} onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, petsAllowed: val }))} />
                 </div>
 
                 <div className="flex items-center justify-between rounded-xl border border-border p-3 sm:col-span-2">
                   <div>
-                    <p className="text-xs font-semibold">¿Es Propiedad Principal / Destacada?</p>
+                    <p className="text-xs font-semibold">¿Es Propiedad Principal?</p>
                     <p className="text-[11px] text-muted-foreground">Se muestra por defecto en la portada de la web.</p>
                   </div>
-                  <Switch
-                    checked={editingProp?.isMain || false}
-                    onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, isMain: val }))}
-                  />
+                  <Switch checked={editingProp?.isMain || false} onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, isMain: val }))} />
                 </div>
               </div>
 
               <Separator />
 
               <DialogFooter>
-                <Button variant="ghost" onClick={() => setEditingProp(null)}>
-                  Cancelar
-                </Button>
+                <Button variant="ghost" onClick={() => setEditingProp(null)}>Cancelar</Button>
                 <Button onClick={handleSaveProperty} disabled={submitting}>
-                  {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                  Guardar Propiedad
+                  {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />} Guardar Propiedad
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </TabsContent>
-
-        <TabsContent value="notificaciones" className="mt-6">
-          <Card className="border-border/70 shadow-soft">
-            <CardHeader>
-              <CardTitle className="font-display text-base">Avisos automáticos</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { label: "Nueva consulta por email", detail: "Recibí un aviso apenas llega un lead" },
-                { label: "Nueva consulta por WhatsApp", detail: "Notificación instantánea al celular" },
-              ].map((n) => (
-                <div key={n.label}>
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{n.label}</p>
-                      <p className="text-xs text-muted-foreground">{n.detail}</p>
-                    </div>
-                    <Switch defaultChecked onCheckedChange={() => toast("Preferencia actualizada")} />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="integraciones" className="mt-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {integrations.map((i) => (
-              <Card key={i.name} className="border-border/70 shadow-soft">
-                <CardContent className="space-y-3 p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-display text-base font-semibold">{i.name}</p>
-                      <p className="text-xs text-muted-foreground">{i.description}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </TabsContent>
       </Tabs>
     </div>

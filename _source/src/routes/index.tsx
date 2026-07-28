@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronDown, MapPin, Star } from "lucide-react";
 
@@ -14,7 +15,8 @@ import {
 } from "@/components/public/sections";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { heroContent, images, places, property } from "@/data/site";
+import { heroContent as defaultHero, images, places, property } from "@/data/site";
+import { settingService } from "@/lib/services";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -60,6 +62,30 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const [hero, setHero] = useState({
+    eyebrow: defaultHero.eyebrow,
+    title: defaultHero.title,
+    subtitle: defaultHero.subtitle,
+    bgImage: images.heroExterior,
+  });
+
+  useEffect(() => {
+    const loadHero = async () => {
+      try {
+        const s = await settingService.get();
+        setHero({
+          eyebrow: s.heroEyebrow || defaultHero.eyebrow,
+          title: s.heroTitle || defaultHero.title,
+          subtitle: s.heroSubtitle || defaultHero.subtitle,
+          bgImage: s.heroBgImage || images.heroExterior,
+        });
+      } catch (e) {
+        console.error("Error al cargar hero:", e);
+      }
+    };
+    loadHero();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar transparent />
@@ -67,8 +93,8 @@ function Home() {
       {/* HERO */}
       <section className="relative flex min-h-screen items-end overflow-hidden">
         <img
-          src={images.heroExterior}
-          alt="Fachada iluminada del departamento con el lago Nahuel Huapi y los Andes al atardecer"
+          src={hero.bgImage}
+          alt="Fachada iluminada del departamento"
           width={1920}
           height={1088}
           className="absolute inset-0 h-full w-full object-cover"
@@ -77,13 +103,13 @@ function Home() {
 
         <div className="relative mx-auto w-full max-w-7xl px-5 pb-24 pt-32 lg:px-8">
           <p className="reveal text-xs font-medium uppercase tracking-[0.28em] text-primary-foreground/75">
-            {heroContent.eyebrow}
+            {hero.eyebrow}
           </p>
           <h1 className="reveal mt-6 max-w-3xl font-display text-4xl font-semibold leading-[1.05] text-balance-tight text-primary-foreground sm:text-6xl lg:text-7xl">
-            {heroContent.title}
+            {hero.title}
           </h1>
           <p className="reveal mt-6 max-w-xl text-base leading-relaxed text-primary-foreground/80 sm:text-lg">
-            {heroContent.subtitle}
+            {hero.subtitle}
           </p>
 
           <div className="reveal mt-10 flex flex-col gap-3 sm:flex-row">

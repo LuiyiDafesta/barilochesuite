@@ -23,6 +23,10 @@ export function Footer() {
           address: s.address || defaultProperty.address,
           whatsapp: s.whatsapp || defaultProperty.whatsapp,
           email: s.email || defaultProperty.email,
+          footerDescription: s.footerDescription || "Alojamiento boutique de alta gama frente al lago Nahuel Huapi.",
+          copyrightText: s.copyrightText || `${s.businessName || "Bariloche Suite"}. Todos los derechos reservados.`,
+          instagramUrl: s.instagramUrl || "https://instagram.com",
+          facebookUrl: s.facebookUrl || "https://facebook.com",
         });
       } catch (e) {
         console.error("Error al cargar ajustes en Footer:", e);
@@ -43,7 +47,7 @@ export function Footer() {
               <span className="font-display text-lg font-semibold">{info.businessName}</span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
-              {defaultProperty.tagline} en San Carlos de Bariloche. Un refugio de diseño con vistas al Nahuel Huapi.
+              {info.footerDescription}
             </p>
           </div>
 

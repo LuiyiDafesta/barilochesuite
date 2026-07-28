@@ -213,62 +213,173 @@ export const generateUniqueReservationCode = async (): Promise<string> => {
   return code || `CN-${Date.now().toString().slice(-4)}`;
 };
 
-// Servicios de Ajustes de Precios y Reglas Globales
+// Servicio de Webhooks para CRM
+export const webhookService = {
+  async trigger(event: "lead.created" | "reservation.created" | "reservation.confirmed" | "reservation.cancelled", payload: any) {
+    try {
+      const settings = await settingService.get();
+      let url = "";
+      if (event === "lead.created") url = settings.webhookLeadCreated || "";
+      else if (event === "reservation.created") url = settings.webhookReservationCreated || "";
+      else if (event === "reservation.confirmed") url = settings.webhookReservationConfirmed || "";
+      else if (event === "reservation.cancelled") url = settings.webhookReservationCancelled || "";
+
+      if (!url) return;
+
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event, timestamp: new Date().toISOString(), payload }),
+      }).catch((e) => console.error(`Error enviando webhook [${event}]:`, e));
+    } catch (e) {
+      console.error(`Error en webhookService:`, e);
+    }
+  },
+};
+
+const getLocalEnterpriseSettings = () => {
+  try {
+    const raw = localStorage.getItem("enterprise_site_settings");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveLocalEnterpriseSettings = (data: any) => {
+  try {
+    const current = getLocalEnterpriseSettings();
+    const updated = { ...current, ...data };
+    localStorage.setItem("enterprise_site_settings", JSON.stringify(updated));
+  } catch (e) {
+    console.error("Error al guardar enterprise settings local:", e);
+  }
+};
+
+// Servicios de Ajustes de Precios, Reglas Globales y White-Label CMS
 export const settingService = {
   async get() {
     const localTax = localStorage.getItem("site_tax_percent");
     const fallbackTax = localTax !== null ? Number(localTax) : 0;
+    const localEnt = getLocalEnterpriseSettings();
 
     const { data, error } = await supabase.from("site_settings").select("*").eq("id", "default").single();
+
+    const defaults = {
+      businessName: "Bariloche Suite",
+      address: "Av. Bustillo Km 6,400 – San Carlos de Bariloche, Río Negro",
+      whatsapp: "+54 9 294 400 1234",
+      email: "reservas@barilochesuite.com",
+      houseRules: "Check in 15:00 · Check out 11:00. No se permiten fiestas ni eventos.",
+      basePrice: 185000,
+      cleaningFee: 45000,
+      taxPercent: fallbackTax,
+      weekendSurchargePercent: 15,
+      weeklyDiscountEnabled: true,
+      weeklyDiscountPercent: 10,
+      monthlyDiscountEnabled: true,
+      monthlyDiscountPercent: 22,
+      minNightsHighSeasonEnabled: true,
+      minNightsHighSeason: 4,
+      petsAllowedEnabled: false,
+      petFeeAmount: 18000,
+      depositRequiredEnabled: true,
+      depositPercent: 30,
+
+      // Enterprise Branding & Languages
+      logoUrl: "",
+      primaryColor: "215 45% 20%",
+      accentColor: "174 62% 47%",
+      enabledLanguages: ["es"], // ["es", "en", "pt"]
+
+      // CMS Hero
+      heroEyebrow: "BARILOCHE · PATAGONIA ARGENTINA",
+      heroTitle: "Un refugio de montaña frente al Nahuel Huapi",
+      heroSubtitle: "Departamento boutique de alta gama en San Carlos de Bariloche. Diseño cálido, vistas infinitas y el confort de un hotel cinco estrellas.",
+      heroBgImage: "/hero-exterior.jpg",
+
+      // CMS Experiencia
+      experienceTitle: "No es un departamento. Es una forma de vivir Bariloche.",
+      experienceDescription: "Cada ambiente fue pensado para que el paisaje sea el protagonista y vos sólo tengas que descansar.",
+      experienceBlocks: [
+        { id: "e1", title: "Vista & Luz", description: "Ventanales de piso a techo orientados al norte. El amanecer sobre el lago desde el sillón principal.", image: "/lake-view.jpg", badge: "Panorámica" },
+        { id: "e2", title: "Descanso & Silencio", description: "Sommiers de alta densidad, sábanas de 600 hilos y cortinas black-out motorizadas para un sueño reparador.", image: "/bedroom.jpg", badge: "Confort Premium" },
+        { id: "e3", title: "Gastronomía & Fuego", description: "Cocina equipada para gourmets y parrilla propia en la terraza para asados con vista a los picos nevados.", image: "/kitchen.jpg", badge: "Equipamiento" },
+      ],
+
+      // CMS Features / Amenities
+      amenities: [
+        { id: "a1", title: "Vista Panorámica", description: "Balcón terraza con vista frontal directa al lago Nahuel Huapi y los cerros.", icon: "Mountain", visible: true },
+        { id: "a2", title: "Check-in Autónomo", description: "Acceso digital con cerradura inteligente sin necesidad de coordinar llaves.", icon: "KeyRound", visible: true },
+        { id: "a3", title: "WiFi de Alta Velocidad", description: "Conexión de fibra óptica dedicada de 300 Mbps para trabajo o streaming.", icon: "Wifi", visible: true },
+        { id: "a4", title: "Garage & Seguridad", description: "Cochera cubierta privada en subsuelo con portón automatizado.", icon: "ShieldCheck", visible: true },
+        { id: "a5", title: "Calefacción Central", description: "Losa radiante regulable por ambientes para máxima calidez invernal.", icon: "Sparkles", visible: true },
+        { id: "a6", title: "Pet Friendly", description: "Aceptamos mascotas educadas bajo consulta previa.", icon: "CheckCircle2", visible: true },
+      ],
+
+      // CMS Footer
+      footerDescription: "Alojamiento boutique de alta gama frente al lago Nahuel Huapi. Confort, diseño y vistas infinitas en San Carlos de Bariloche.",
+      copyrightText: "Bariloche Suite. Todos los derechos reservados.",
+      instagramUrl: "https://instagram.com",
+      facebookUrl: "https://facebook.com",
+
+      // Analytics & Tracking
+      googleAnalyticsId: "",
+      googleTagManagerId: "",
+      metaPixelId: "",
+      customHeadScript: "",
+
+      // SEO & Geo
+      metaTitle: "Bariloche Suite — Hospedaje Boutique frente al lago en Bariloche",
+      metaDescription: "Alojate en departamentos de alta gama frente al Nahuel Huapi en San Carlos de Bariloche.",
+      keywords: "Bariloche, hospedaje, departamento, alquiler vacacional, Nahuel Huapi, Cerro Catedral",
+      ogImage: "",
+      faviconUrl: "",
+      latitude: -41.1335,
+      longitude: -71.3103,
+      currencyCode: "ARS",
+
+      // Webhooks CRM
+      webhookLeadCreated: "",
+      webhookReservationCreated: "",
+      webhookReservationConfirmed: "",
+      webhookReservationCancelled: "",
+    };
+
     if (error || !data) {
-      return {
-        businessName: "Bariloche Suite",
-        address: "Av. Bustillo Km 6,400 – San Carlos de Bariloche, Río Negro",
-        whatsapp: "+54 9 294 400 1234",
-        email: "reservas@barilochesuite.com",
-        houseRules: "Check in 15:00 · Check out 11:00. No se permiten fiestas ni eventos.",
-        basePrice: 185000,
-        cleaningFee: 45000,
-        taxPercent: fallbackTax,
-        weekendSurchargePercent: 15,
-        weeklyDiscountEnabled: true,
-        weeklyDiscountPercent: 10,
-        monthlyDiscountEnabled: true,
-        monthlyDiscountPercent: 22,
-        minNightsHighSeasonEnabled: true,
-        minNightsHighSeason: 4,
-        petsAllowedEnabled: false,
-        petFeeAmount: 18000,
-        depositRequiredEnabled: true,
-        depositPercent: 30,
-      };
+      return { ...defaults, ...localEnt };
     }
+
     return {
-      businessName: data.business_name || "Bariloche Suite",
-      address: data.address || "Av. Bustillo Km 6,400 – San Carlos de Bariloche, Río Negro",
-      whatsapp: data.whatsapp || "+54 9 294 400 1234",
-      email: data.email || "reservas@barilochesuite.com",
-      houseRules: data.house_rules || "Check in 15:00 · Check out 11:00. No se permiten fiestas ni eventos.",
-      basePrice: data.base_price != null ? Number(data.base_price) : 185000,
-      cleaningFee: data.cleaning_fee != null ? Number(data.cleaning_fee) : 45000,
+      ...defaults,
+      businessName: data.business_name || defaults.businessName,
+      address: data.address || defaults.address,
+      whatsapp: data.whatsapp || defaults.whatsapp,
+      email: data.email || defaults.email,
+      houseRules: data.house_rules || defaults.houseRules,
+      basePrice: data.base_price != null ? Number(data.base_price) : defaults.basePrice,
+      cleaningFee: data.cleaning_fee != null ? Number(data.cleaning_fee) : defaults.cleaningFee,
       taxPercent: data.tax_percent != null ? Number(data.tax_percent) : fallbackTax,
-      weekendSurchargePercent: data.weekend_surcharge_percent != null ? Number(data.weekend_surcharge_percent) : 15,
-      weeklyDiscountEnabled: data.weekly_discount_enabled ?? true,
-      weeklyDiscountPercent: data.weekly_discount_percent != null ? Number(data.weekly_discount_percent) : 10,
-      monthlyDiscountEnabled: data.monthly_discount_enabled ?? true,
-      monthlyDiscountPercent: data.monthly_discount_percent != null ? Number(data.monthly_discount_percent) : 22,
-      minNightsHighSeasonEnabled: data.min_nights_high_season_enabled ?? true,
-      minNightsHighSeason: data.min_nights_high_season != null ? Number(data.min_nights_high_season) : 4,
-      petsAllowedEnabled: data.pets_allowed_enabled ?? false,
-      petFeeAmount: data.pet_fee_amount != null ? Number(data.pet_fee_amount) : 18000,
-      depositRequiredEnabled: data.deposit_required_enabled ?? true,
-      depositPercent: data.deposit_percent != null ? Number(data.deposit_percent) : 30,
+      weekendSurchargePercent: data.weekend_surcharge_percent != null ? Number(data.weekend_surcharge_percent) : defaults.weekendSurchargePercent,
+      weeklyDiscountEnabled: data.weekly_discount_enabled ?? defaults.weeklyDiscountEnabled,
+      weeklyDiscountPercent: data.weekly_discount_percent != null ? Number(data.weekly_discount_percent) : defaults.weeklyDiscountPercent,
+      monthlyDiscountEnabled: data.monthly_discount_enabled ?? defaults.monthlyDiscountEnabled,
+      monthlyDiscountPercent: data.monthly_discount_percent != null ? Number(data.monthly_discount_percent) : defaults.monthlyDiscountPercent,
+      minNightsHighSeasonEnabled: data.min_nights_high_season_enabled ?? defaults.minNightsHighSeasonEnabled,
+      minNightsHighSeason: data.min_nights_high_season != null ? Number(data.min_nights_high_season) : defaults.minNightsHighSeason,
+      petsAllowedEnabled: data.pets_allowed_enabled ?? defaults.petsAllowedEnabled,
+      petFeeAmount: data.pet_fee_amount != null ? Number(data.pet_fee_amount) : defaults.petFeeAmount,
+      depositRequiredEnabled: data.deposit_required_enabled ?? defaults.depositRequiredEnabled,
+      depositPercent: data.deposit_percent != null ? Number(data.deposit_percent) : defaults.depositPercent,
+      ...localEnt,
     };
   },
   async update(settings: any) {
     if (settings.taxPercent !== undefined) {
       localStorage.setItem("site_tax_percent", String(settings.taxPercent));
     }
+
+    saveLocalEnterpriseSettings(settings);
 
     const payload: any = {
       id: "default",
@@ -299,7 +410,6 @@ export const settingService = {
     });
 
     if (error) {
-      // Reintentar sin tax_percent si la columna aun no existe en el esquema de Supabase DB
       const { error: retryError } = await supabase.from("site_settings").upsert(payload);
       if (retryError) throw retryError;
     }
@@ -394,8 +504,13 @@ export const reservationService = {
     };
   },
   async updateStatus(id: string, status: string) {
-    const { error } = await supabase.from("reservations").update({ status }).eq("id", id);
+    const { data, error } = await supabase.from("reservations").update({ status }).eq("id", id).select();
     if (error) throw error;
+    const r = data?.[0];
+    if (r) {
+      const eventName = status === "confirmada" ? "reservation.confirmed" : status === "cancelada" ? "reservation.cancelled" : null;
+      if (eventName) webhookService.trigger(eventName, r);
+    }
   },
   async delete(id: string) {
     const { error } = await supabase.from("reservations").delete().eq("id", id);
@@ -446,7 +561,7 @@ export const leadService = {
     }]).select();
     if (error) throw error;
     const l = data[0];
-    return {
+    const createdLead = {
       id: l.id,
       clientId: l.client_id || "",
       name: l.name,
@@ -462,6 +577,8 @@ export const leadService = {
       createdAt: l.created_at ? l.created_at.split("T")[0] : new Date().toISOString().split("T")[0],
       message: l.message || "",
     };
+    webhookService.trigger("lead.created", createdLead);
+    return createdLead;
   }
 };
 

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import * as Icons from "lucide-react";
 import { Star, Quote } from "lucide-react";
 
@@ -6,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { amenities, experiences, faqs, reviews } from "@/data/site";
+import { settingService } from "@/lib/services";
 
 export function SectionHeading({
   eyebrow,
@@ -34,11 +36,29 @@ export function SectionHeading({
 }
 
 export function ExperienceBlocks() {
+  const [blocks, setBlocks] = useState<any[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const s = await settingService.get();
+        if (s.experienceBlocks && s.experienceBlocks.length > 0) {
+          setBlocks(s.experienceBlocks);
+        } else {
+          setBlocks(experiences.map((exp) => ({ title: exp.title, description: exp.text, image: exp.image, badge: exp.tag })));
+        }
+      } catch (e) {
+        console.error("Error al cargar bloques de experiencia:", e);
+      }
+    };
+    load();
+  }, []);
+
   return (
     <div className="space-y-24 md:space-y-32">
-      {experiences.map((exp, i) => (
+      {blocks.map((exp, i) => (
         <div
-          key={exp.title}
+          key={exp.id || exp.title}
           className="grid items-center gap-8 md:grid-cols-2 md:gap-16"
         >
           <div className={`zoom-frame rounded-3xl shadow-soft ${i % 2 === 1 ? "md:order-2" : ""}`}>
@@ -50,13 +70,15 @@ export function ExperienceBlocks() {
             />
           </div>
           <div className={i % 2 === 1 ? "md:order-1 md:pr-8" : "md:pl-8"}>
-            <Badge variant="secondary" className="rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.18em]">
-              {exp.tag}
-            </Badge>
+            {exp.badge && (
+              <Badge variant="secondary" className="rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.18em]">
+                {exp.badge}
+              </Badge>
+            )}
             <h3 className="mt-5 font-display text-2xl font-semibold leading-tight sm:text-3xl md:text-4xl">
               {exp.title}
             </h3>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground">{exp.text}</p>
+            <p className="mt-4 text-base leading-relaxed text-muted-foreground">{exp.description || exp.text}</p>
           </div>
         </div>
       ))}
@@ -65,18 +87,36 @@ export function ExperienceBlocks() {
 }
 
 export function AmenitiesGrid() {
+  const [list, setList] = useState<any[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const s = await settingService.get();
+        if (s.amenities && s.amenities.length > 0) {
+          setList(s.amenities.filter((a: any) => a.visible !== false));
+        } else {
+          setList(amenities.map((a) => ({ title: a.label, description: a.detail, icon: a.icon })));
+        }
+      } catch (e) {
+        console.error("Error al cargar características:", e);
+      }
+    };
+    load();
+  }, []);
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {amenities.map((a) => {
+      {list.map((a) => {
         const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[a.icon] ?? Icons.Check;
         return (
-          <Card key={a.label} className="hover-lift border-border/70 bg-card shadow-soft">
+          <Card key={a.id || a.title} className="hover-lift border-border/70 bg-card shadow-soft">
             <CardContent className="p-6">
               <span className="grid h-11 w-11 place-items-center rounded-xl bg-accent text-accent-foreground">
                 <Icon className="h-5 w-5" />
               </span>
-              <p className="mt-4 font-display text-base font-semibold">{a.label}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{a.detail}</p>
+              <p className="mt-4 font-display text-base font-semibold">{a.title || a.label}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{a.description || a.detail}</p>
             </CardContent>
           </Card>
         );

@@ -44,7 +44,8 @@ function Lugares() {
   const loadPlaces = async () => {
     try {
       setLoading(true);
-      const data = await placeService.getAll();
+      const activeProp = localStorage.getItem("active_property_id") || "todas";
+      const data = await placeService.getAll(activeProp);
       setItems(data);
     } catch (e) {
       console.error("Error al cargar lugares de Supabase:", e);
@@ -55,6 +56,9 @@ function Lugares() {
 
   useEffect(() => {
     loadPlaces();
+    const handlePropChange = () => loadPlaces();
+    window.addEventListener("property_changed", handlePropChange);
+    return () => window.removeEventListener("property_changed", handlePropChange);
   }, []);
 
   const handleCreatePlace = async () => {
