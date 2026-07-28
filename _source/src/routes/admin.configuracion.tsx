@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/admin/ui-bits";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -299,9 +300,13 @@ function Configuracion() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="logo">URL del Logo (SVG o PNG transparente)</Label>
-                  <Input id="logo" placeholder="https://miempresa.com/logo.svg" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} />
-                  <p className="text-[11px] text-muted-foreground">Si no se especifica, se utilizará el logo e icono por defecto.</p>
+                  <ImageUploader
+                    preset="logo"
+                    value={logoUrl}
+                    onChange={setLogoUrl}
+                    label="Logo de la Empresa"
+                    description="Optimizado automáticamente a máx 600px (PNG, SVG, WebP)."
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pColor">Color Primario (HSL o Hex)</Label>
@@ -445,13 +450,23 @@ function Configuracion() {
                   <Label htmlFor="kw">Palabras Clave (Keywords)</Label>
                   <Input id="kw" value={keywords} onChange={(e) => setKeywords(e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ogImg">Imagen OpenGraph (WhatsApp / Redes)</Label>
-                  <Input id="ogImg" placeholder="https://..." value={ogImage} onChange={(e) => setOgImage(e.target.value)} />
+                <div className="space-y-2 sm:col-span-2">
+                  <ImageUploader
+                    preset="opengraph"
+                    value={ogImage}
+                    onChange={setOgImage}
+                    label="Imagen OpenGraph (WhatsApp / Redes)"
+                    description="Redimensionada automáticamente a 1200x630px para vistas previas en redes."
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fav">Favicon / Icono URL</Label>
-                  <Input id="fav" placeholder="https://..." value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} />
+                <div className="space-y-2 sm:col-span-2">
+                  <ImageUploader
+                    preset="favicon"
+                    value={faviconUrl}
+                    onChange={setFaviconUrl}
+                    label="Favicon / Icono de Navegador"
+                    description="Recorte cuadrado automático 1:1 (128x128px)."
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lat">Latitud GEO</Label>

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Image, Loader2, Plus, Save, Sparkles, Trash2 } from "lucide-react";
+import { Image, Languages, Loader2, Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/admin/ui-bits";
+import { ImageUploader } from "@/components/admin/ImageUploader";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,16 +23,32 @@ export const Route = createFileRoute("/admin/contenido")({
 function Contenido() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [enabledLangs, setEnabledLangs] = useState<string[]>(["es"]);
 
   // Hero
   const [eyebrow, setEyebrow] = useState("");
+  const [eyebrowEn, setEyebrowEn] = useState("");
+  const [eyebrowPt, setEyebrowPt] = useState("");
+
   const [title, setTitle] = useState("");
+  const [titleEn, setTitleEn] = useState("");
+  const [titlePt, setTitlePt] = useState("");
+
   const [subtitle, setSubtitle] = useState("");
+  const [subtitleEn, setSubtitleEn] = useState("");
+  const [subtitlePt, setSubtitlePt] = useState("");
+
   const [bgImage, setBgImage] = useState("");
 
   // Experiencia
   const [expTitle, setExpTitle] = useState("");
+  const [expTitleEn, setExpTitleEn] = useState("");
+  const [expTitlePt, setExpTitlePt] = useState("");
+
   const [expDesc, setExpDesc] = useState("");
+  const [expDescEn, setExpDescEn] = useState("");
+  const [expDescPt, setExpDescPt] = useState("");
+
   const [expBlocks, setExpBlocks] = useState<any[]>([]);
 
   // Amenities
@@ -38,6 +56,9 @@ function Contenido() {
 
   // Footer
   const [footerDesc, setFooterDesc] = useState("");
+  const [footerDescEn, setFooterDescEn] = useState("");
+  const [footerDescPt, setFooterDescPt] = useState("");
+
   const [copyright, setCopyright] = useState("");
   const [instagram, setInstagram] = useState("");
   const [facebook, setFacebook] = useState("");
@@ -46,19 +67,37 @@ function Contenido() {
     try {
       setLoading(true);
       const s = await settingService.get();
+      setEnabledLangs(s.enabledLanguages || ["es"]);
 
       setEyebrow(s.heroEyebrow || "BARILOCHE · PATAGONIA ARGENTINA");
+      setEyebrowEn(s.heroEyebrow_en || "");
+      setEyebrowPt(s.heroEyebrow_pt || "");
+
       setTitle(s.heroTitle || "Un refugio de montaña frente al Nahuel Huapi");
+      setTitleEn(s.heroTitle_en || "");
+      setTitlePt(s.heroTitle_pt || "");
+
       setSubtitle(s.heroSubtitle || "");
+      setSubtitleEn(s.heroSubtitle_en || "");
+      setSubtitlePt(s.heroSubtitle_pt || "");
+
       setBgImage(s.heroBgImage || "/hero-exterior.jpg");
 
       setExpTitle(s.experienceTitle || "No es un departamento. Es una forma de vivir Bariloche.");
-      setExpDesc(s.experienceDescription || "");
-      setExpBlocks(s.experienceBlocks || []);
+      setExpTitleEn(s.experienceTitle_en || "");
+      setExpTitlePt(s.experienceTitle_pt || "");
 
+      setExpDesc(s.experienceDescription || "");
+      setExpDescEn(s.experienceDescription_en || "");
+      setExpDescPt(s.experienceDescription_pt || "");
+
+      setExpBlocks(s.experienceBlocks || []);
       setAmenitiesList(s.amenities || []);
 
       setFooterDesc(s.footerDescription || "");
+      setFooterDescEn(s.footerDescription_en || "");
+      setFooterDescPt(s.footerDescription_pt || "");
+
       setCopyright(s.copyrightText || "");
       setInstagram(s.instagramUrl || "");
       setFacebook(s.facebookUrl || "");
@@ -80,19 +119,31 @@ function Contenido() {
       await settingService.update({
         ...current,
         heroEyebrow: eyebrow,
+        heroEyebrow_en: eyebrowEn,
+        heroEyebrow_pt: eyebrowPt,
         heroTitle: title,
+        heroTitle_en: titleEn,
+        heroTitle_pt: titlePt,
         heroSubtitle: subtitle,
+        heroSubtitle_en: subtitleEn,
+        heroSubtitle_pt: subtitlePt,
         heroBgImage: bgImage,
         experienceTitle: expTitle,
+        experienceTitle_en: expTitleEn,
+        experienceTitle_pt: expTitlePt,
         experienceDescription: expDesc,
+        experienceDescription_en: expDescEn,
+        experienceDescription_pt: expDescPt,
         experienceBlocks: expBlocks,
         amenities: amenitiesList,
         footerDescription: footerDesc,
+        footerDescription_en: footerDescEn,
+        footerDescription_pt: footerDescPt,
         copyrightText: copyright,
         instagramUrl: instagram,
         facebookUrl: facebook,
       });
-      toast.success("¡Contenido del sitio publicado exitosamente!");
+      toast.success("¡Contenido publicado correctamente para todos los idiomas!");
     } catch (e) {
       toast.error("Error al publicar contenido");
     } finally {
@@ -104,7 +155,11 @@ function Contenido() {
     const newBlock = {
       id: `e_${Date.now()}`,
       title: "Nuevo Bloque",
+      title_en: "",
+      title_pt: "",
       description: "Descripción de la experiencia...",
+      description_en: "",
+      description_pt: "",
       image: "/lake-view.jpg",
       badge: "Destacado",
     };
@@ -137,18 +192,25 @@ function Contenido() {
     const newA = {
       id: `a_${Date.now()}`,
       title: "Nueva Característica",
+      title_en: "",
+      title_pt: "",
       description: "Detalle del servicio...",
+      description_en: "",
+      description_pt: "",
       icon: "Sparkles",
       visible: true,
     };
     setAmenitiesList((prev) => [...prev, newA]);
   };
 
+  const showEn = enabledLangs.includes("en");
+  const showPt = enabledLangs.includes("pt");
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Gestor de Contenido CMS"
-        description="Personalizá los textos, fotos e información destacada de la web pública."
+        title="Gestor de Contenido CMS Multidioma"
+        description="Personalizá los textos, fotos y traducciones de la web pública."
         actions={
           <Button size="sm" className="rounded-full" onClick={handleSaveAll} disabled={saving}>
             {saving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-1.5 h-3.5 w-3.5" />}
@@ -173,26 +235,98 @@ function Contenido() {
           {/* Tab Portada */}
           <TabsContent value="hero" className="mt-6">
             <Card className="border-border/70 shadow-soft">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="font-display text-base">Sección de Portada (Hero)</CardTitle>
+                {enabledLangs.length > 1 && (
+                  <Badge variant="outline" className="text-xs font-normal">
+                    <Languages className="mr-1 h-3 w-3 text-teal" /> Idiomas habilitados: {enabledLangs.join(", ").toUpperCase()}
+                  </Badge>
+                )}
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="eyebrow">Antetítulo / Categoría (Eyebrow)</Label>
-                  <Input id="eyebrow" value={eyebrow} onChange={(e) => setEyebrow(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="titulo">Título Principal</Label>
-                  <Input id="titulo" value={title} onChange={(e) => setTitle(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sub">Subtítulo / Descripción Corta</Label>
-                  <Textarea id="sub" rows={3} value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bgImg">URL o Ruta de Imagen de Fondo</Label>
-                  <Input id="bgImg" value={bgImage} onChange={(e) => setBgImage(e.target.value)} />
-                </div>
+              <CardContent className="space-y-6">
+                <ImageUploader
+                  preset="photo"
+                  value={bgImage}
+                  onChange={setBgImage}
+                  label="Imagen de Fondo de Portada"
+                  description="Optimización y compresión automática a HD (máx 1920px)."
+                />
+
+                <Separator />
+
+                {enabledLangs.length > 1 ? (
+                  <Tabs defaultValue="es">
+                    <TabsList className="h-9">
+                      <TabsTrigger value="es" className="text-xs">🇪🇸 Español</TabsTrigger>
+                      {showEn && <TabsTrigger value="en" className="text-xs">🇬🇧 English</TabsTrigger>}
+                      {showPt && <TabsTrigger value="pt" className="text-xs">🇧🇷 Português</TabsTrigger>}
+                    </TabsList>
+
+                    <TabsContent value="es" className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="eyebrow">Antetítulo (Eyebrow)</Label>
+                        <Input id="eyebrow" value={eyebrow} onChange={(e) => setEyebrow(e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="titulo">Título Principal</Label>
+                        <Input id="titulo" value={title} onChange={(e) => setTitle(e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="sub">Subtítulo / Descripción</Label>
+                        <Textarea id="sub" rows={3} value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
+                      </div>
+                    </TabsContent>
+
+                    {showEn && (
+                      <TabsContent value="en" className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                          <Label>Eyebrow (English)</Label>
+                          <Input placeholder="BARILOCHE · ARGENTINA" value={eyebrowEn} onChange={(e) => setEyebrowEn(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Main Title (English)</Label>
+                          <Input placeholder="A mountain sanctuary facing Lake Nahuel Huapi" value={titleEn} onChange={(e) => setTitleEn(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Subtitle (English)</Label>
+                          <Textarea rows={3} placeholder="High-end boutique apartment in San Carlos de Bariloche..." value={subtitleEn} onChange={(e) => setSubtitleEn(e.target.value)} />
+                        </div>
+                      </TabsContent>
+                    )}
+
+                    {showPt && (
+                      <TabsContent value="pt" className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                          <Label>Eyebrow (Português)</Label>
+                          <Input placeholder="BARILOCHE · PATAGÔNIA ARGENTINA" value={eyebrowPt} onChange={(e) => setEyebrowPt(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Título Principal (Português)</Label>
+                          <Input placeholder="Um refúgio de montanha em frente ao Lago Nahuel Huapi" value={titlePt} onChange={(e) => setTitlePt(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Subtítulo (Português)</Label>
+                          <Textarea rows={3} placeholder="Apartamento boutique de alto padrão em San Carlos de Bariloche..." value={subtitlePt} onChange={(e) => setSubtitlePt(e.target.value)} />
+                        </div>
+                      </TabsContent>
+                    )}
+                  </Tabs>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="eyebrow">Antetítulo (Eyebrow)</Label>
+                      <Input id="eyebrow" value={eyebrow} onChange={(e) => setEyebrow(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="titulo">Título Principal</Label>
+                      <Input id="titulo" value={title} onChange={(e) => setTitle(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sub">Subtítulo / Descripción</Label>
+                      <Textarea id="sub" rows={3} value={subtitle} onChange={(e) => setSubtitle(e.target.value)} />
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -204,14 +338,63 @@ function Contenido() {
                 <CardTitle className="font-display text-base">Encabezado de "La Experiencia"</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="expT">Título de la Sección</Label>
-                  <Input id="expT" value={expTitle} onChange={(e) => setExpTitle(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="expD">Descripción de la Sección</Label>
-                  <Textarea id="expD" rows={2} value={expDesc} onChange={(e) => setExpDesc(e.target.value)} />
-                </div>
+                {enabledLangs.length > 1 ? (
+                  <Tabs defaultValue="es">
+                    <TabsList className="h-9">
+                      <TabsTrigger value="es" className="text-xs">🇪🇸 Español</TabsTrigger>
+                      {showEn && <TabsTrigger value="en" className="text-xs">🇬🇧 English</TabsTrigger>}
+                      {showPt && <TabsTrigger value="pt" className="text-xs">🇧🇷 Português</TabsTrigger>}
+                    </TabsList>
+
+                    <TabsContent value="es" className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label>Título de la Sección</Label>
+                        <Input value={expTitle} onChange={(e) => setExpTitle(e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Descripción de la Sección</Label>
+                        <Textarea rows={2} value={expDesc} onChange={(e) => setExpDesc(e.target.value)} />
+                      </div>
+                    </TabsContent>
+
+                    {showEn && (
+                      <TabsContent value="en" className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                          <Label>Section Title (English)</Label>
+                          <Input value={expTitleEn} onChange={(e) => setExpTitleEn(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Section Description (English)</Label>
+                          <Textarea rows={2} value={expDescEn} onChange={(e) => setExpDescEn(e.target.value)} />
+                        </div>
+                      </TabsContent>
+                    )}
+
+                    {showPt && (
+                      <TabsContent value="pt" className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                          <Label>Título da Seção (Português)</Label>
+                          <Input value={expTitlePt} onChange={(e) => setExpTitlePt(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Descrição da Seção (Português)</Label>
+                          <Textarea rows={2} value={expDescPt} onChange={(e) => setExpDescPt(e.target.value)} />
+                        </div>
+                      </TabsContent>
+                    )}
+                  </Tabs>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="expT">Título de la Sección</Label>
+                      <Input id="expT" value={expTitle} onChange={(e) => setExpTitle(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="expD">Descripción de la Sección</Label>
+                      <Textarea id="expD" rows={2} value={expDesc} onChange={(e) => setExpDesc(e.target.value)} />
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -234,9 +417,19 @@ function Contenido() {
                       </Button>
                     </div>
 
+                    <ImageUploader
+                      preset="photo"
+                      value={b.image}
+                      onChange={(url) => handleUpdateExpBlock(b.id, "image", url)}
+                      label="Imagen del Bloque"
+                      description="Compresión automática a HD (máx 1920px)."
+                    />
+
+                    <Separator />
+
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label>Título del Bloque</Label>
+                        <Label>Título (Español)</Label>
                         <Input value={b.title} onChange={(e) => handleUpdateExpBlock(b.id, "title", e.target.value)} />
                       </div>
                       <div className="space-y-2">
@@ -244,13 +437,35 @@ function Contenido() {
                         <Input value={b.badge || ""} onChange={(e) => handleUpdateExpBlock(b.id, "badge", e.target.value)} />
                       </div>
                       <div className="space-y-2 sm:col-span-2">
-                        <Label>Descripción</Label>
+                        <Label>Descripción (Español)</Label>
                         <Textarea rows={2} value={b.description} onChange={(e) => handleUpdateExpBlock(b.id, "description", e.target.value)} />
                       </div>
-                      <div className="space-y-2 sm:col-span-2">
-                        <Label>URL de Imagen</Label>
-                        <Input value={b.image} onChange={(e) => handleUpdateExpBlock(b.id, "image", e.target.value)} />
-                      </div>
+
+                      {showEn && (
+                        <>
+                          <div className="space-y-2">
+                            <Label>Title (English)</Label>
+                            <Input value={b.title_en || ""} onChange={(e) => handleUpdateExpBlock(b.id, "title_en", e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Description (English)</Label>
+                            <Input value={b.description_en || ""} onChange={(e) => handleUpdateExpBlock(b.id, "description_en", e.target.value)} />
+                          </div>
+                        </>
+                      )}
+
+                      {showPt && (
+                        <>
+                          <div className="space-y-2">
+                            <Label>Título (Português)</Label>
+                            <Input value={b.title_pt || ""} onChange={(e) => handleUpdateExpBlock(b.id, "title_pt", e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Descrição (Português)</Label>
+                            <Input value={b.description_pt || ""} onChange={(e) => handleUpdateExpBlock(b.id, "description_pt", e.target.value)} />
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -290,6 +505,30 @@ function Contenido() {
                       value={a.description}
                       onChange={(e) => handleUpdateAmenity(a.id, "description", e.target.value)}
                     />
+
+                    {showEn && (
+                      <div className="space-y-1 pt-1 border-t">
+                        <Label className="text-[11px] text-muted-foreground">English Translation:</Label>
+                        <Input
+                          className="text-xs h-7"
+                          placeholder="Title (EN)"
+                          value={a.title_en || ""}
+                          onChange={(e) => handleUpdateAmenity(a.id, "title_en", e.target.value)}
+                        />
+                      </div>
+                    )}
+
+                    {showPt && (
+                      <div className="space-y-1 pt-1 border-t">
+                        <Label className="text-[11px] text-muted-foreground">Tradução Português:</Label>
+                        <Input
+                          className="text-xs h-7"
+                          placeholder="Título (PT)"
+                          value={a.title_pt || ""}
+                          onChange={(e) => handleUpdateAmenity(a.id, "title_pt", e.target.value)}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </CardContent>
@@ -303,10 +542,48 @@ function Contenido() {
                 <CardTitle className="font-display text-base">Pie de Página (Footer)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fDesc">Descripción Institucional</Label>
-                  <Textarea id="fDesc" rows={3} value={footerDesc} onChange={(e) => setFooterDesc(e.target.value)} />
-                </div>
+                {enabledLangs.length > 1 ? (
+                  <Tabs defaultValue="es">
+                    <TabsList className="h-9">
+                      <TabsTrigger value="es" className="text-xs">🇪🇸 Español</TabsTrigger>
+                      {showEn && <TabsTrigger value="en" className="text-xs">🇬🇧 English</TabsTrigger>}
+                      {showPt && <TabsTrigger value="pt" className="text-xs">🇧🇷 Português</TabsTrigger>}
+                    </TabsList>
+
+                    <TabsContent value="es" className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="fDesc">Descripción Institucional</Label>
+                        <Textarea id="fDesc" rows={3} value={footerDesc} onChange={(e) => setFooterDesc(e.target.value)} />
+                      </div>
+                    </TabsContent>
+
+                    {showEn && (
+                      <TabsContent value="en" className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                          <Label>Institutional Description (English)</Label>
+                          <Textarea rows={3} value={footerDescEn} onChange={(e) => setFooterDescEn(e.target.value)} />
+                        </div>
+                      </TabsContent>
+                    )}
+
+                    {showPt && (
+                      <TabsContent value="pt" className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                          <Label>Descrição Institucional (Português)</Label>
+                          <Textarea rows={3} value={footerDescPt} onChange={(e) => setFooterDescPt(e.target.value)} />
+                        </div>
+                      </TabsContent>
+                    )}
+                  </Tabs>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="fDesc">Descripción Institucional</Label>
+                    <Textarea id="fDesc" rows={3} value={footerDesc} onChange={(e) => setFooterDesc(e.target.value)} />
+                  </div>
+                )}
+
+                <Separator />
+
                 <div className="space-y-2">
                   <Label htmlFor="cRight">Texto Copyright</Label>
                   <Input id="cRight" value={copyright} onChange={(e) => setCopyright(e.target.value)} />
