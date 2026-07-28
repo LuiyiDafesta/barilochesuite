@@ -35,13 +35,14 @@ export function BookingSection() {
   useEffect(() => {
     const loadAll = async () => {
       try {
-        const [propsData, settsData] = await Promise.all([
+        const [rawProps, settsData] = await Promise.all([
           propertyService.getAll(),
           settingService.get(),
         ]);
-        setProperties(propsData);
+        const activeList = rawProps.filter((p) => p.active !== false);
+        setProperties(activeList);
         setSettings(settsData);
-        const mainProp = propsData.find((p) => p.isMain) || propsData[0];
+        const mainProp = activeList.find((p) => p.isMain) || activeList[0];
         if (mainProp) setSelectedPropId(mainProp.id);
 
         const [resData, blockData, rateData] = await Promise.all([

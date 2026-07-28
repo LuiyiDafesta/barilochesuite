@@ -243,11 +243,20 @@ function Configuracion() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <p className="font-display text-base font-semibold">{p.name}</p>
                             {p.isMain && (
                               <Badge className="bg-teal text-teal-foreground text-[10px]">
                                 Principal
+                              </Badge>
+                            )}
+                            {p.active === false ? (
+                              <Badge variant="outline" className="border-warning/50 text-warning text-[10px]">
+                                Pausada (Standby)
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-success text-success-foreground text-[10px]">
+                                Publicada
                               </Badge>
                             )}
                           </div>
@@ -371,6 +380,17 @@ function Configuracion() {
                     placeholder="ej: 4829#"
                     value={editingProp?.lockCode || ""}
                     onChange={(e) => setEditingProp((prev) => ({ ...prev, lockCode: e.target.value }))}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between rounded-xl border border-border p-3 sm:col-span-2 bg-muted/20">
+                  <div>
+                    <p className="text-xs font-semibold">¿Publicada y Activa en la Web?</p>
+                    <p className="text-[11px] text-muted-foreground">Si se desactiva, la propiedad queda en Standby y se oculta de toda la web pública.</p>
+                  </div>
+                  <Switch
+                    checked={editingProp?.active !== false}
+                    onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, active: val }))}
                   />
                 </div>
 

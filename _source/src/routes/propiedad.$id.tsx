@@ -58,7 +58,12 @@ function DetallePropiedad() {
           settingService.get(),
         ]);
         setSettings(settsData);
-        const found = propsData.find((p) => p.id === id) || propsData[0];
+        const found = propsData.find((p) => p.id === id);
+        if (!found || found.active === false) {
+          setProp(null);
+          setLoading(false);
+          return;
+        }
         setProp(found);
 
         if (found) {

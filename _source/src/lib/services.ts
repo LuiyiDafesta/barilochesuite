@@ -10,6 +10,7 @@ export interface PropertyItem {
   maxGuests: number;
   petsAllowed: boolean;
   isMain: boolean;
+  active?: boolean;
   wifiNetwork: string;
   wifiPassword: string;
   lockCode: string;
@@ -31,6 +32,7 @@ export const propertyService = {
           maxGuests: 4,
           petsAllowed: false,
           isMain: true,
+          active: true,
           wifiNetwork: "CasaNahuel_5G",
           wifiPassword: "Nahuel2026",
           lockCode: "4829#",
@@ -45,6 +47,7 @@ export const propertyService = {
           maxGuests: 2,
           petsAllowed: true,
           isMain: false,
+          active: true,
           wifiNetwork: "Catedral_Guest",
           wifiPassword: "Nieve2026",
           lockCode: "1192#",
@@ -61,6 +64,7 @@ export const propertyService = {
       maxGuests: p.max_guests || 4,
       petsAllowed: !!p.pets_allowed,
       isMain: !!p.is_main,
+      active: p.active !== false,
       wifiNetwork: p.wifi_network || "",
       wifiPassword: p.wifi_password || "",
       lockCode: p.lock_code || "",
@@ -69,7 +73,7 @@ export const propertyService = {
     }));
   },
   async create(prop: Partial<PropertyItem>): Promise<PropertyItem> {
-    const { data, error } = await supabase.from("properties").insert([{
+    const payload: any = {
       id: prop.id || `p_${Date.now()}`,
       name: prop.name,
       tagline: prop.tagline || "",
@@ -77,13 +81,21 @@ export const propertyService = {
       max_guests: prop.maxGuests || 4,
       pets_allowed: prop.petsAllowed || false,
       is_main: prop.isMain || false,
+      active: prop.active ?? true,
       wifi_network: prop.wifiNetwork || "",
       wifi_password: prop.wifiPassword || "",
       lock_code: prop.lockCode || "",
       check_in_info: prop.checkInInfo || "",
       base_price: prop.basePrice || 185000,
-    }]).select();
-    if (error) throw error;
+    };
+    let { data, error } = await supabase.from("properties").insert([payload]).select();
+    if (error) {
+      // Reintentar sin active si la columna aun no existe en el esquema de Supabase DB
+      delete payload.active;
+      const retry = await supabase.from("properties").insert([payload]).select();
+      if (retry.error) throw retry.error;
+      data = retry.data;
+    }
     const p = data[0];
     return {
       id: p.id,
@@ -93,6 +105,7 @@ export const propertyService = {
       maxGuests: p.max_guests || 4,
       petsAllowed: !!p.pets_allowed,
       isMain: !!p.is_main,
+      active: prop.active ?? (p.active !== false),
       wifiNetwork: p.wifi_network || "",
       wifiPassword: p.wifi_password || "",
       lockCode: p.lock_code || "",
@@ -101,20 +114,32 @@ export const propertyService = {
     };
   },
   async update(id: string, prop: Partial<PropertyItem>): Promise<PropertyItem> {
-    const { data, error } = await supabase.from("properties").update({
+    const payload: any = {
       name: prop.name,
       tagline: prop.tagline,
       address: prop.address,
       max_guests: prop.maxGuests,
       pets_allowed: prop.petsAllowed,
       is_main: prop.isMain,
+      active: prop.active,
       wifi_network: prop.wifiNetwork,
       wifi_password: prop.wifiPassword,
       lock_code: prop.lockCode,
       check_in_info: prop.checkInInfo,
       base_price: prop.basePrice,
-    }).eq("id", id).select();
-    if (error) throw error;
+    };
+    // Remover undefined
+    Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
+
+    let { data, error } = await supabase.from("properties").update(payload).eq("id", id).select();
+    if (error && payload.active !== undefined) {
+      delete payload.active;
+      const retry = await supabase.from("properties").update(payload).eq("id", id).select();
+      if (retry.error) throw retry.error;
+      data = retry.data;
+    } else if (error) {
+      throw error;
+    }
     const p = data[0];
     return {
       id: p.id,
@@ -124,6 +149,7 @@ export const propertyService = {
       maxGuests: p.max_guests || 4,
       petsAllowed: !!p.pets_allowed,
       isMain: !!p.is_main,
+      active: prop.active !== undefined ? prop.active : (p.active !== false),
       wifiNetwork: p.wifi_network || "",
       wifiPassword: p.wifi_password || "",
       lockCode: p.lock_code || "",

@@ -53,7 +53,7 @@ function PropiedadesCatalog() {
         </div>
       ) : (
         <div className="grid gap-8 md:grid-cols-2">
-          {properties.map((p) => (
+          {properties.filter((p) => p.active !== false).map((p) => (
             <Card key={p.id} className="overflow-hidden border-border/80 shadow-lift transition-all hover:shadow-2xl">
               <div className="relative h-64 bg-gradient-to-tr from-primary to-primary/80 p-6 flex flex-col justify-between text-white">
                 <div className="flex items-center justify-between">
