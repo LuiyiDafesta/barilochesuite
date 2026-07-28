@@ -15,6 +15,7 @@ import { PageHeader, StageBadge, StatusBadge } from "@/components/admin/ui-bits"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Block, formatARS, formatDate, Lead, leadStages, Reservation } from "@/data/admin";
 import { buildOccupancyMap } from "@/lib/dates";
@@ -24,8 +25,29 @@ export const Route = createFileRoute("/admin/")({
   component: Dashboard,
 });
 
+const monthsList = [
+  { id: "all", label: "Todo el año (Anual)" },
+  { id: "0", label: "Enero" },
+  { id: "1", label: "Febrero" },
+  { id: "2", label: "Marzo" },
+  { id: "3", label: "Abril" },
+  { id: "4", label: "Mayo" },
+  { id: "5", label: "Junio" },
+  { id: "6", label: "Julio" },
+  { id: "7", label: "Agosto" },
+  { id: "8", label: "Septiembre" },
+  { id: "9", label: "Octubre" },
+  { id: "10", label: "Noviembre" },
+  { id: "11", label: "Diciembre" },
+];
+
+const availableYears = [2024, 2025, 2026, 2027, 2028];
+
 function Dashboard() {
   const [propName, setPropName] = useState<string>("Todas las Propiedades");
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [selectedMonth, setSelectedMonth] = useState<string>("7"); // 7 = Agosto por defecto
+
   const [reservationsData, setReservationsData] = useState<Reservation[]>([]);
   const [blocksData, setBlocksData] = useState<Block[]>([]);
   const [leadsData, setLeadsData] = useState<Lead[]>([]);
@@ -67,70 +89,156 @@ function Dashboard() {
     return () => window.removeEventListener("property_changed", handlePropChange);
   }, []);
 
-  const occupancy = useMemo(
+  const occupancyMap = useMemo(
     () => buildOccupancyMap(reservationsData, blocksData),
     [reservationsData, blocksData]
   );
 
-  const activeReservations = useMemo(
-    () => reservationsData.filter((r) => r.status !== "cancelada"),
-    [reservationsData]
-  );
+  // Reservas filtradas por Año y Mes
+  const filteredReservations = useMemo(() => {
+    return reservationsData.filter((r) => {
+      if (r.status === "cancelada" || !r.checkIn) return false;
+      const d = new Date(`${r.checkIn}T12:00:00`);
+      if (d.getFullYear() !== selectedYear) return false;
 
-  const upcomingIn = useMemo(
-    () => activeReservations.filter((r) => r.status === "confirmada").slice(0, 3),
-    [activeReservations]
-  );
-  const upcomingOut = useMemo(
-    () => activeReservations.filter((r) => r.status === "confirmada").slice(1, 4),
-    [activeReservations]
-  );
+      if (selectedMonth !== "all") {
+        return d.getMonth() === Number(selectedMonth);
+      }
+      return true;
+    });
+  }, [reservationsData, selectedYear, selectedMonth]);
 
-  const totalEstimatedRevenue = useMemo(
-    () => activeReservations.reduce((sum, r) => sum + (r.amount || 0), 0),
-    [activeReservations]
-  );
+  // Total de ingresos del período seleccionado
+  const periodRevenue = useMemo(() => {
+    return filteredReservations.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  }, [filteredReservations]);
 
+  // Nombre del período para etiquetas
+  const periodLabel = useMemo(() => {
+    if (selectedMonth === "all") return `Año ${selectedYear}`;
+    const mName = monthsList.find((m) => m.id === selectedMonth)?.label || "";
+    return `${mName} ${selectedYear}`;
+  }, [selectedYear, selectedMonth]);
+
+  // Porcentaje de Ocupación del período
   const occupancyPercent = useMemo(() => {
-    if (occupancy.reservada.length === 0) return 0;
-    return Math.min(100, Math.round((occupancy.reservada.length / 31) * 100));
-  }, [occupancy]);
+    if (selectedMonth === "all") {
+      const daysInYear = 365;
+      const taken = occupancyMap.reservada.filter((d) => d.getFullYear() === selectedYear).length;
+      return Math.min(100, Math.round((taken / daysInYear) * 100));
+    } else {
+      const monthIdx = Number(selectedMonth);
+      const daysInMonth = new Date(selectedYear, monthIdx + 1, 0).getDate();
+      const taken = occupancyMap.reservada.filter(
+        (d) => d.getFullYear() === selectedYear && d.getMonth() === monthIdx
+      ).length;
+      return Math.min(100, Math.round((taken / daysInMonth) * 100));
+    }
+  }, [occupancyMap, selectedYear, selectedMonth]);
 
   const kpis = [
-    { label: "Reservas del mes", value: String(activeReservations.length), delta: "Total en sistema", icon: CalendarDays },
-    { label: "Consultas nuevas", value: String(leadsData.length), delta: "Registradas", icon: Inbox },
-    { label: "Ingresos estimados", value: formatARS(totalEstimatedRevenue), delta: "Total proyectado", icon: Wallet },
-    { label: "Ocupación", value: `${occupancyPercent}%`, delta: "Agosto 2026", icon: Percent },
+    { label: `Reservas (${selectedMonth === "all" ? "Anual" : "Mensual"})`, value: String(filteredReservations.length), delta: periodLabel, icon: CalendarDays },
+    { label: "Consultas en sistema", value: String(leadsData.length), delta: "Registradas", icon: Inbox },
+    { label: `Ingresos (${selectedMonth === "all" ? "Año" : "Mes"})`, value: formatARS(periodRevenue), delta: periodLabel, icon: Wallet },
+    { label: "Ocupación", value: `${occupancyPercent}%`, delta: periodLabel, icon: Percent },
   ];
 
-  const monthsNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  // Datos para el gráfico de Ingresos
   const chartData = useMemo(() => {
-    const totals = new Array(12).fill(0);
-    activeReservations.forEach((r) => {
-      if (!r.checkIn) return;
-      const d = new Date(`${r.checkIn}T12:00:00`);
-      const m = d.getMonth();
-      if (m >= 0 && m < 12) {
-        totals[m] += Number(r.amount || 0);
-      }
-    });
-    return monthsNames.map((name, i) => ({
-      month: name,
-      ingresos: totals[i],
-    }));
-  }, [activeReservations]);
+    if (selectedMonth === "all") {
+      // Mostrar evolución mes a mes del año seleccionado
+      const monthsNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+      const totals = new Array(12).fill(0);
+      reservationsData.forEach((r) => {
+        if (r.status === "cancelada" || !r.checkIn) return;
+        const d = new Date(`${r.checkIn}T12:00:00`);
+        if (d.getFullYear() === selectedYear) {
+          totals[d.getMonth()] += Number(r.amount || 0);
+        }
+      });
+      return monthsNames.map((name, i) => ({
+        label: name,
+        ingresos: totals[i],
+      }));
+    } else {
+      // Mostrar evolución por día del mes seleccionado
+      const monthIdx = Number(selectedMonth);
+      const daysInMonth = new Date(selectedYear, monthIdx + 1, 0).getDate();
+      const daysTotals = new Array(daysInMonth).fill(0);
+
+      reservationsData.forEach((r) => {
+        if (r.status === "cancelada" || !r.checkIn) return;
+        const d = new Date(`${r.checkIn}T12:00:00`);
+        if (d.getFullYear() === selectedYear && d.getMonth() === monthIdx) {
+          const dayNum = d.getDate();
+          if (dayNum >= 1 && dayNum <= daysInMonth) {
+            daysTotals[dayNum - 1] += Number(r.amount || 0);
+          }
+        }
+      });
+
+      return daysTotals.map((tot, idx) => ({
+        label: `Día ${idx + 1}`,
+        ingresos: tot,
+      }));
+    }
+  }, [reservationsData, selectedYear, selectedMonth]);
+
+  const upcomingIn = useMemo(
+    () => filteredReservations.filter((r) => r.status === "confirmada").slice(0, 4),
+    [filteredReservations]
+  );
+  const upcomingOut = useMemo(
+    () => filteredReservations.filter((r) => r.status === "confirmada").slice(1, 5),
+    [filteredReservations]
+  );
+
+  const calendarMonth = useMemo(() => {
+    const m = selectedMonth === "all" ? 7 : Number(selectedMonth);
+    return new Date(selectedYear, m, 1);
+  }, [selectedYear, selectedMonth]);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dashboard"
-        description={`Resumen operativo de ${propName} — Agosto 2026`}
+        title="Dashboard Estadístico"
+        description={`Resumen operativo de ${propName} — ${periodLabel}`}
         actions={
-          <Button asChild size="sm" className="rounded-full">
-            <Link to="/admin/calendario">
-              Abrir calendario <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Selector de Mes */}
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-[170px] h-9 text-xs rounded-full bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthsList.map((m) => (
+                  <SelectItem key={m.id} value={m.id} className="text-xs">
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Selector de Año */}
+            <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
+              <SelectTrigger className="w-[100px] h-9 text-xs rounded-full bg-background">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map((y) => (
+                  <SelectItem key={y} value={String(y)} className="text-xs">
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button asChild size="sm" className="rounded-full">
+              <Link to="/admin/calendario">
+                Abrir calendario <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </div>
         }
       />
 
@@ -140,6 +248,7 @@ function Dashboard() {
         </div>
       ) : (
         <>
+          {/* Tarjetas KPI */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {kpis.map((k) => (
               <Card key={k.label} className="border-border/70 shadow-soft">
@@ -155,10 +264,13 @@ function Dashboard() {
             ))}
           </div>
 
+          {/* Gráfico y Calendario */}
           <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
             <Card className="border-border/70 shadow-soft">
               <CardHeader>
-                <CardTitle className="font-display text-base">Ingresos y ocupación 2026 ({propName})</CardTitle>
+                <CardTitle className="font-display text-base">
+                  Ingresos ({selectedMonth === "all" ? `Evolución Mensual ${selectedYear}` : `Evolución Diaria - ${periodLabel}`}) — {propName}
+                </CardTitle>
               </CardHeader>
               <CardContent className="pl-0">
                 <div className="h-[280px] w-full">
@@ -171,12 +283,12 @@ function Dashboard() {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                      <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} stroke="var(--muted-foreground)" />
+                      <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} stroke="var(--muted-foreground)" />
                       <YAxis
-                        tickFormatter={(v) => `${Math.round(v / 1_000_000)}M`}
+                        tickFormatter={(v) => (v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : `${Math.round(v / 1000)}k`)}
                         tickLine={false}
                         axisLine={false}
-                        fontSize={12}
+                        fontSize={11}
                         stroke="var(--muted-foreground)"
                       />
                       <RTooltip
@@ -203,13 +315,14 @@ function Dashboard() {
 
             <Card className="border-border/70 shadow-soft">
               <CardHeader>
-                <CardTitle className="font-display text-base">Ocupación del mes ({propName})</CardTitle>
+                <CardTitle className="font-display text-base">Mapa de Ocupación ({periodLabel})</CardTitle>
               </CardHeader>
               <CardContent className="flex justify-center">
                 <Calendar
                   mode="single"
-                  defaultMonth={new Date(2026, 7, 1)}
-                  modifiers={occupancy}
+                  defaultMonth={calendarMonth}
+                  key={calendarMonth.toISOString()}
+                  modifiers={occupancyMap}
                   modifiersClassNames={{
                     reservada: "bg-primary/85 text-primary-foreground rounded-md",
                     pendiente: "bg-warning text-warning-foreground rounded-md",
@@ -226,7 +339,7 @@ function Dashboard() {
           <div className="grid gap-4 lg:grid-cols-2">
             <Card className="border-border/70 shadow-soft">
               <CardHeader>
-                <CardTitle className="font-display text-base">Próximos movimientos ({propName})</CardTitle>
+                <CardTitle className="font-display text-base">Próximos movimientos ({periodLabel})</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -242,7 +355,7 @@ function Dashboard() {
                         </li>
                       ))
                     ) : (
-                      <p className="text-xs text-muted-foreground">No hay check-ins próximos registrados.</p>
+                      <p className="text-xs text-muted-foreground">No hay check-ins para este período.</p>
                     )}
                   </ul>
                 </div>
@@ -260,7 +373,7 @@ function Dashboard() {
                         </li>
                       ))
                     ) : (
-                      <p className="text-xs text-muted-foreground">No hay check-outs próximos registrados.</p>
+                      <p className="text-xs text-muted-foreground">No hay check-outs para este período.</p>
                     )}
                   </ul>
                 </div>
@@ -288,7 +401,7 @@ function Dashboard() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-muted-foreground py-2">No hay consultas registradas para esta propiedad.</p>
+                  <p className="text-xs text-muted-foreground py-2">No hay consultas registradas.</p>
                 )}
               </CardContent>
             </Card>
@@ -296,14 +409,14 @@ function Dashboard() {
 
           <Card className="border-border/70 shadow-soft">
             <CardHeader className="flex-row items-center justify-between">
-              <CardTitle className="font-display text-base">Últimas reservas ({propName})</CardTitle>
+              <CardTitle className="font-display text-base">Reservas del período ({periodLabel}) — {propName}</CardTitle>
               <Button asChild variant="ghost" size="sm" className="rounded-full">
                 <Link to="/admin/reservas">Ver todas</Link>
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
-              {reservationsData.length > 0 ? (
-                reservationsData.slice(0, 5).map((r) => (
+              {filteredReservations.length > 0 ? (
+                filteredReservations.slice(0, 5).map((r) => (
                   <div key={r.id} className="flex items-center justify-between gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{r.guest}</p>
@@ -318,7 +431,7 @@ function Dashboard() {
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-muted-foreground py-2">No hay reservas registradas para esta propiedad.</p>
+                <p className="text-xs text-muted-foreground py-2">No hay reservas registradas en este período para esta propiedad.</p>
               )}
             </CardContent>
           </Card>
