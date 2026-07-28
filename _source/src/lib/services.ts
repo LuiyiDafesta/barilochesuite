@@ -18,9 +18,30 @@ export interface PropertyItem {
   basePrice: number;
 }
 
+const getInactivePropertyIds = (): string[] => {
+  try {
+    const raw = localStorage.getItem("inactive_property_ids");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const setPropertyActiveState = (id: string, active: boolean) => {
+  const inactive = getInactivePropertyIds();
+  let updated: string[];
+  if (!active) {
+    updated = Array.from(new Set([...inactive, id]));
+  } else {
+    updated = inactive.filter((i) => i !== id);
+  }
+  localStorage.setItem("inactive_property_ids", JSON.stringify(updated));
+};
+
 // Servicio de Propiedades
 export const propertyService = {
   async getAll(): Promise<PropertyItem[]> {
+    const inactiveIds = getInactivePropertyIds();
     const { data, error } = await supabase.from("properties").select("*").order("is_main", { ascending: false });
     if (error || !data || data.length === 0) {
       return [
@@ -32,7 +53,7 @@ export const propertyService = {
           maxGuests: 4,
           petsAllowed: false,
           isMain: true,
-          active: true,
+          active: !inactiveIds.includes("p_nahuel"),
           wifiNetwork: "CasaNahuel_5G",
           wifiPassword: "Nahuel2026",
           lockCode: "4829#",
@@ -47,7 +68,7 @@ export const propertyService = {
           maxGuests: 2,
           petsAllowed: true,
           isMain: false,
-          active: true,
+          active: !inactiveIds.includes("p_catedral"),
           wifiNetwork: "Catedral_Guest",
           wifiPassword: "Nieve2026",
           lockCode: "1192#",
@@ -56,21 +77,24 @@ export const propertyService = {
         },
       ];
     }
-    return data.map((p) => ({
-      id: p.id,
-      name: p.name,
-      tagline: p.tagline || "",
-      address: p.address || "",
-      maxGuests: p.max_guests || 4,
-      petsAllowed: !!p.pets_allowed,
-      isMain: !!p.is_main,
-      active: p.active !== false,
-      wifiNetwork: p.wifi_network || "",
-      wifiPassword: p.wifi_password || "",
-      lockCode: p.lock_code || "",
-      checkInInfo: p.check_in_info || "",
-      basePrice: Number(p.base_price || 185000),
-    }));
+    return data.map((p) => {
+      const isInactive = inactiveIds.includes(p.id) || p.active === false;
+      return {
+        id: p.id,
+        name: p.name,
+        tagline: p.tagline || "",
+        address: p.address || "",
+        maxGuests: p.max_guests || 4,
+        petsAllowed: !!p.pets_allowed,
+        isMain: !!p.is_main,
+        active: !isInactive,
+        wifiNetwork: p.wifi_network || "",
+        wifiPassword: p.wifi_password || "",
+        lockCode: p.lock_code || "",
+        checkInInfo: p.check_in_info || "",
+        basePrice: Number(p.base_price || 185000),
+      };
+    });
   },
   async create(prop: Partial<PropertyItem>): Promise<PropertyItem> {
     const payload: any = {
@@ -88,15 +112,20 @@ export const propertyService = {
       check_in_info: prop.checkInInfo || "",
       base_price: prop.basePrice || 185000,
     };
+
+    if (prop.active !== undefined) {
+      setPropertyActiveState(payload.id, prop.active);
+    }
+
     let { data, error } = await supabase.from("properties").insert([payload]).select();
     if (error) {
-      // Reintentar sin active si la columna aun no existe en el esquema de Supabase DB
       delete payload.active;
       const retry = await supabase.from("properties").insert([payload]).select();
       if (retry.error) throw retry.error;
       data = retry.data;
     }
     const p = data[0];
+    const isInactive = getInactivePropertyIds().includes(p.id) || p.active === false;
     return {
       id: p.id,
       name: p.name,
@@ -105,7 +134,7 @@ export const propertyService = {
       maxGuests: p.max_guests || 4,
       petsAllowed: !!p.pets_allowed,
       isMain: !!p.is_main,
-      active: prop.active ?? (p.active !== false),
+      active: !isInactive,
       wifiNetwork: p.wifi_network || "",
       wifiPassword: p.wifi_password || "",
       lockCode: p.lock_code || "",
@@ -114,6 +143,10 @@ export const propertyService = {
     };
   },
   async update(id: string, prop: Partial<PropertyItem>): Promise<PropertyItem> {
+    if (prop.active !== undefined) {
+      setPropertyActiveState(id, prop.active);
+    }
+
     const payload: any = {
       name: prop.name,
       tagline: prop.tagline,
@@ -128,7 +161,6 @@ export const propertyService = {
       check_in_info: prop.checkInInfo,
       base_price: prop.basePrice,
     };
-    // Remover undefined
     Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
 
     let { data, error } = await supabase.from("properties").update(payload).eq("id", id).select();
@@ -141,6 +173,7 @@ export const propertyService = {
       throw error;
     }
     const p = data[0];
+    const isInactive = getInactivePropertyIds().includes(id) || p.active === false;
     return {
       id: p.id,
       name: p.name,
@@ -149,7 +182,7 @@ export const propertyService = {
       maxGuests: p.max_guests || 4,
       petsAllowed: !!p.pets_allowed,
       isMain: !!p.is_main,
-      active: prop.active !== undefined ? prop.active : (p.active !== false),
+      active: !isInactive,
       wifiNetwork: p.wifi_network || "",
       wifiPassword: p.wifi_password || "",
       lockCode: p.lock_code || "",

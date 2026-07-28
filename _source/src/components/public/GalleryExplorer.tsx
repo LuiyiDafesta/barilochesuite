@@ -35,7 +35,8 @@ export function GalleryExplorer({
     const loadGalleryData = async () => {
       try {
         const props = await propertyService.getAll();
-        setProperties(props);
+        const activeProps = props.filter((p) => p.active !== false);
+        setProperties(activeProps);
         const data = await galleryService.getAll(propertyId || selectedPropertyFilter);
         setGalleryItems(data as any);
       } catch (e) {
