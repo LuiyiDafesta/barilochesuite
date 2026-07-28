@@ -18,6 +18,22 @@ export interface Translations {
     bedrooms: string;
     bathrooms: string;
   };
+  sections: {
+    experienceEyebrow: string;
+    experienceTitle: string;
+    amenitiesEyebrow: string;
+    amenitiesTitle: string;
+    galleryEyebrow: string;
+    galleryTitle: string;
+    locationEyebrow: string;
+    locationTitle: string;
+    availabilityEyebrow: string;
+    availabilityTitle: string;
+    reviewsEyebrow: string;
+    reviewsTitle: string;
+    faqEyebrow: string;
+    faqTitle: string;
+  };
   booking: {
     title: string;
     subtitle: string;
@@ -35,6 +51,7 @@ export interface Translations {
     sendInquiry: string;
     occupied: string;
     available: string;
+    selectDatesPrompt: string;
   };
   footer: {
     contactUs: string;
@@ -73,6 +90,22 @@ export const translations: Record<Language, Translations> = {
       bedrooms: "habitaciones",
       bathrooms: "baños",
     },
+    sections: {
+      experienceEyebrow: "La Experiencia",
+      experienceTitle: "No es un departamento. Es una forma de vivir Bariloche.",
+      amenitiesEyebrow: "Características",
+      amenitiesTitle: "Todo resuelto, hasta el último detalle",
+      galleryEyebrow: "Galería",
+      galleryTitle: "Fotos, videos y tour virtual",
+      locationEyebrow: "Ubicación",
+      locationTitle: "Sobre el corredor de Bustillo, entre el lago y la montaña",
+      availabilityEyebrow: "Disponibilidad",
+      availabilityTitle: "Elegí tus fechas y mirá el precio estimado",
+      reviewsEyebrow: "Huéspedes",
+      reviewsTitle: "Lo que dicen quienes ya se quedaron",
+      faqEyebrow: "Preguntas Frecuentes",
+      faqTitle: "Todo lo que querés saber",
+    },
     booking: {
       title: "Disponibilidad y Cotización",
       subtitle: "Seleccioná tus fechas para ver el precio estimado.",
@@ -90,6 +123,7 @@ export const translations: Record<Language, Translations> = {
       sendInquiry: "Enviar consulta de disponibilidad",
       occupied: "Ocupada",
       available: "Disponible",
+      selectDatesPrompt: "Seleccioná fecha de entrada y salida en el calendario",
     },
     footer: {
       contactUs: "Contacto y Consultas",
@@ -126,6 +160,22 @@ export const translations: Record<Language, Translations> = {
       bedrooms: "bedrooms",
       bathrooms: "bathrooms",
     },
+    sections: {
+      experienceEyebrow: "The Experience",
+      experienceTitle: "Not just an apartment. A unique way to live Bariloche.",
+      amenitiesEyebrow: "Amenities",
+      amenitiesTitle: "Every detail taken care of",
+      galleryEyebrow: "Gallery",
+      galleryTitle: "Photos, videos and virtual tour",
+      locationEyebrow: "Location",
+      locationTitle: "On Bustillo avenue, between lake and mountains",
+      availabilityEyebrow: "Availability",
+      availabilityTitle: "Select your dates and check estimated rates",
+      reviewsEyebrow: "Guest Reviews",
+      reviewsTitle: "What our guests say",
+      faqEyebrow: "FAQ",
+      faqTitle: "Everything you need to know",
+    },
     booking: {
       title: "Availability & Estimate",
       subtitle: "Select your dates to see the estimated price.",
@@ -143,6 +193,7 @@ export const translations: Record<Language, Translations> = {
       sendInquiry: "Send availability inquiry",
       occupied: "Occupied",
       available: "Available",
+      selectDatesPrompt: "Select check-in and check-out dates on the calendar",
     },
     footer: {
       contactUs: "Contact & Inquiries",
@@ -179,6 +230,22 @@ export const translations: Record<Language, Translations> = {
       bedrooms: "quartos",
       bathrooms: "banheiros",
     },
+    sections: {
+      experienceEyebrow: "A Experiência",
+      experienceTitle: "Não é apenas um apartamento. É uma forma única de viver Bariloche.",
+      amenitiesEyebrow: "Serviços & Comodidades",
+      amenitiesTitle: "Tudo pensado até o último detalhe",
+      galleryEyebrow: "Galeria",
+      galleryTitle: "Fotos, vídeos e tour virtual",
+      locationEyebrow: "Localização",
+      locationTitle: "Na Av. Bustillo, entre o lago e a montanha",
+      availabilityEyebrow: "Disponibilidade",
+      availabilityTitle: "Selecione as datas para consultar os valores",
+      reviewsEyebrow: "Avaliações",
+      reviewsTitle: "O que dizem os nossos hóspedes",
+      faqEyebrow: "Perguntas Frequentes",
+      faqTitle: "Tudo o que você precisa saber",
+    },
     booking: {
       title: "Disponibilidade e Orçamento",
       subtitle: "Selecione as datas para ver o valor estimado.",
@@ -196,6 +263,7 @@ export const translations: Record<Language, Translations> = {
       sendInquiry: "Enviar consulta de disponibilidade",
       occupied: "Ocupado",
       available: "Disponível",
+      selectDatesPrompt: "Selecione as datas de entrada e saída no calendário",
     },
     footer: {
       contactUs: "Contato e Dúvidas",

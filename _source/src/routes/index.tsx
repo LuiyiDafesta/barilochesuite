@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { heroContent as defaultHero, images, places, property } from "@/data/site";
+import { getCurrentLanguage, Language, translations } from "@/lib/i18n";
 import { settingService } from "@/lib/services";
 
 export const Route = createFileRoute("/")({
@@ -62,6 +63,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const [currentLang, setCurrentLang] = useState<Language>(getCurrentLanguage());
   const [hero, setHero] = useState({
     eyebrow: defaultHero.eyebrow,
     title: defaultHero.title,
@@ -70,13 +72,20 @@ function Home() {
   });
 
   useEffect(() => {
+    const onLangChange = (e: any) => setCurrentLang(e.detail);
+    window.addEventListener("language_changed", onLangChange);
+
     const loadHero = async () => {
       try {
         const s = await settingService.get();
+        const eyebrow = (currentLang === "en" && s.heroEyebrow_en) || (currentLang === "pt" && s.heroEyebrow_pt) || s.heroEyebrow || defaultHero.eyebrow;
+        const title = (currentLang === "en" && s.heroTitle_en) || (currentLang === "pt" && s.heroTitle_pt) || s.heroTitle || defaultHero.title;
+        const subtitle = (currentLang === "en" && s.heroSubtitle_en) || (currentLang === "pt" && s.heroSubtitle_pt) || s.heroSubtitle || defaultHero.subtitle;
+
         setHero({
-          eyebrow: s.heroEyebrow || defaultHero.eyebrow,
-          title: s.heroTitle || defaultHero.title,
-          subtitle: s.heroSubtitle || defaultHero.subtitle,
+          eyebrow,
+          title,
+          subtitle,
           bgImage: s.heroBgImage || images.heroExterior,
         });
       } catch (e) {
@@ -84,7 +93,12 @@ function Home() {
       }
     };
     loadHero();
-  }, []);
+    return () => window.removeEventListener("language_changed", onLangChange);
+  }, [currentLang]);
+
+  const tNav = translations[currentLang]?.nav || translations.es.nav;
+  const tHero = translations[currentLang]?.hero || translations.es.hero;
+  const tSec = translations[currentLang]?.sections || translations.es.sections;
 
   return (
     <div className="min-h-screen bg-background">
@@ -115,7 +129,7 @@ function Home() {
           <div className="reveal mt-10 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="rounded-full bg-background px-8 text-foreground hover:bg-background/90">
               <Link to="/reservar">
-                Consultar disponibilidad <ArrowRight className="ml-1.5 h-4 w-4" />
+                {tHero.checkAvailability} <ArrowRight className="ml-1.5 h-4 w-4" />
               </Link>
             </Button>
             <Button
@@ -124,19 +138,19 @@ function Home() {
               variant="outline"
               className="rounded-full border-primary-foreground/40 bg-transparent px-8 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
             >
-              <Link to="/galeria">Ver galería</Link>
+              <Link to="/galeria">{tHero.viewGallery}</Link>
             </Button>
           </div>
 
           <div className="mt-16 flex flex-wrap items-center gap-x-8 gap-y-3 text-sm text-primary-foreground/75">
             <span className="flex items-center gap-1.5">
-              <Star className="h-4 w-4 fill-warning text-warning" /> {property.rating} · {property.reviewsCount} reseñas
+              <Star className="h-4 w-4 fill-warning text-warning" /> {property.rating} · {property.reviewsCount} {tHero.reviews}
             </span>
             <span className="flex items-center gap-1.5">
               <MapPin className="h-4 w-4" /> {property.city}, {property.region}
             </span>
             <span>
-              {property.guests} huéspedes · {property.bedrooms} habitaciones · {property.bathrooms} baños
+              {property.guests} {tHero.guests} · {property.bedrooms} {tHero.bedrooms} · {property.bathrooms} {tHero.bathrooms}
             </span>
           </div>
 
@@ -149,8 +163,8 @@ function Home() {
       {/* EXPERIENCIA */}
       <section className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-32">
         <SectionHeading
-          eyebrow="La experiencia"
-          title="No es un departamento. Es una forma de vivir Bariloche."
+          eyebrow={tSec.experienceEyebrow}
+          title={tSec.experienceTitle}
           description="Cada ambiente fue pensado para que el paisaje sea el protagonista y vos sólo tengas que descansar."
         />
         <div className="mt-20">
@@ -162,8 +176,8 @@ function Home() {
       <section className="border-y border-border bg-secondary/30">
         <div className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-32">
           <SectionHeading
-            eyebrow="Características"
-            title="Todo resuelto, hasta el último detalle"
+            eyebrow={tSec.amenitiesEyebrow}
+            title={tSec.amenitiesTitle}
             align="center"
           />
           <div className="mt-14">
@@ -176,13 +190,13 @@ function Home() {
       <section className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-32">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading
-            eyebrow="Galería"
-            title="Fotos, videos y tour virtual"
+            eyebrow={tSec.galleryEyebrow}
+            title={tSec.galleryTitle}
             description="Recorré cada ambiente antes de llegar."
           />
           <Button asChild variant="outline" className="rounded-full">
             <Link to="/galeria">
-              Ver galería completa <ArrowRight className="ml-1.5 h-4 w-4" />
+              {tHero.viewGallery} <ArrowRight className="ml-1.5 h-4 w-4" />
             </Link>
           </Button>
         </div>
@@ -195,8 +209,8 @@ function Home() {
       <section className="border-y border-border bg-secondary/30">
         <div className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-32">
           <SectionHeading
-            eyebrow="Ubicación"
-            title="Sobre el corredor de Bustillo, entre el lago y la montaña"
+            eyebrow={tSec.locationEyebrow}
+            title={tSec.locationTitle}
             description="A minutos del Centro Cívico, del Cerro Catedral y de las mejores mesas de la ciudad."
           />
           <div className="mt-12 grid gap-6 lg:grid-cols-[1.3fr_1fr]">

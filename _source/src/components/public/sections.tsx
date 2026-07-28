@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { amenities, experiences, faqs, reviews } from "@/data/site";
+import { getCurrentLanguage, Language, translations } from "@/lib/i18n";
 import { settingService } from "@/lib/services";
 
 export function SectionHeading({
@@ -37,8 +38,12 @@ export function SectionHeading({
 
 export function ExperienceBlocks() {
   const [blocks, setBlocks] = useState<any[]>([]);
+  const [currentLang, setCurrentLang] = useState<Language>(getCurrentLanguage());
 
   useEffect(() => {
+    const onLangChange = (e: any) => setCurrentLang(e.detail);
+    window.addEventListener("language_changed", onLangChange);
+
     const load = async () => {
       try {
         const s = await settingService.get();
@@ -52,44 +57,54 @@ export function ExperienceBlocks() {
       }
     };
     load();
+    return () => window.removeEventListener("language_changed", onLangChange);
   }, []);
 
   return (
     <div className="space-y-24 md:space-y-32">
-      {blocks.map((exp, i) => (
-        <div
-          key={exp.id || exp.title}
-          className="grid items-center gap-8 md:grid-cols-2 md:gap-16"
-        >
-          <div className={`zoom-frame rounded-3xl shadow-soft ${i % 2 === 1 ? "md:order-2" : ""}`}>
-            <img
-              src={exp.image}
-              alt={exp.title}
-              loading="lazy"
-              className="aspect-[4/3] w-full rounded-3xl object-cover"
-            />
+      {blocks.map((exp, i) => {
+        const title = (currentLang === "en" && exp.title_en) || (currentLang === "pt" && exp.title_pt) || exp.title;
+        const description = (currentLang === "en" && exp.description_en) || (currentLang === "pt" && exp.description_pt) || exp.description || exp.text;
+
+        return (
+          <div
+            key={exp.id || exp.title}
+            className="grid items-center gap-8 md:grid-cols-2 md:gap-16"
+          >
+            <div className={`zoom-frame rounded-3xl shadow-soft ${i % 2 === 1 ? "md:order-2" : ""}`}>
+              <img
+                src={exp.image}
+                alt={title}
+                loading="lazy"
+                className="aspect-[4/3] w-full rounded-3xl object-cover"
+              />
+            </div>
+            <div className={i % 2 === 1 ? "md:order-1 md:pr-8" : "md:pl-8"}>
+              {exp.badge && (
+                <Badge variant="secondary" className="rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.18em]">
+                  {exp.badge}
+                </Badge>
+              )}
+              <h3 className="mt-5 font-display text-2xl font-semibold leading-tight sm:text-3xl md:text-4xl">
+                {title}
+              </h3>
+              <p className="mt-4 text-base leading-relaxed text-muted-foreground">{description}</p>
+            </div>
           </div>
-          <div className={i % 2 === 1 ? "md:order-1 md:pr-8" : "md:pl-8"}>
-            {exp.badge && (
-              <Badge variant="secondary" className="rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.18em]">
-                {exp.badge}
-              </Badge>
-            )}
-            <h3 className="mt-5 font-display text-2xl font-semibold leading-tight sm:text-3xl md:text-4xl">
-              {exp.title}
-            </h3>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground">{exp.description || exp.text}</p>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
 export function AmenitiesGrid() {
   const [list, setList] = useState<any[]>([]);
+  const [currentLang, setCurrentLang] = useState<Language>(getCurrentLanguage());
 
   useEffect(() => {
+    const onLangChange = (e: any) => setCurrentLang(e.detail);
+    window.addEventListener("language_changed", onLangChange);
+
     const load = async () => {
       try {
         const s = await settingService.get();
@@ -103,20 +118,24 @@ export function AmenitiesGrid() {
       }
     };
     load();
+    return () => window.removeEventListener("language_changed", onLangChange);
   }, []);
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {list.map((a) => {
         const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[a.icon] ?? Icons.Check;
+        const title = (currentLang === "en" && a.title_en) || (currentLang === "pt" && a.title_pt) || a.title || a.label;
+        const description = (currentLang === "en" && a.description_en) || (currentLang === "pt" && a.description_pt) || a.description || a.detail;
+
         return (
           <Card key={a.id || a.title} className="hover-lift border-border/70 bg-card shadow-soft">
             <CardContent className="p-6">
               <span className="grid h-11 w-11 place-items-center rounded-xl bg-accent text-accent-foreground">
                 <Icon className="h-5 w-5" />
               </span>
-              <p className="mt-4 font-display text-base font-semibold">{a.title || a.label}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{a.description || a.detail}</p>
+              <p className="mt-4 font-display text-base font-semibold">{title}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
             </CardContent>
           </Card>
         );

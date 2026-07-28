@@ -32,6 +32,16 @@ export function BookingSection() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
 
+  const [currentLang, setCurrentLang] = useState<Language>(getCurrentLanguage());
+
+  useEffect(() => {
+    const onLangChange = (e: any) => setCurrentLang(e.detail);
+    window.addEventListener("language_changed", onLangChange);
+    return () => window.removeEventListener("language_changed", onLangChange);
+  }, []);
+
+  const t = translations[currentLang]?.booking || translations.es.booking;
+
   useEffect(() => {
     const loadAll = async () => {
       try {
@@ -155,7 +165,7 @@ export function BookingSection() {
       {properties.length > 1 && (
         <div className="rounded-3xl border border-border/80 bg-card p-4 sm:p-6 shadow-soft space-y-3">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <Home className="h-4 w-4 text-teal" /> Seleccioná tu propiedad de alojamiento:
+            <Home className="h-4 w-4 text-teal" /> {t.selectProperty}
           </div>
           <div className="flex flex-wrap gap-3">
             {properties.map((p) => {
@@ -190,11 +200,11 @@ export function BookingSection() {
             <CardContent className="p-4 sm:p-6">
               <div className="mb-4 grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-border bg-secondary/40 px-4 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Check in</p>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{t.checkIn}</p>
                   <p className="mt-1 truncate font-display text-sm font-semibold">{formatLong(range?.from)}</p>
                 </div>
                 <div className="rounded-xl border border-border bg-secondary/40 px-4 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Check out</p>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{t.checkOut}</p>
                   <p className="mt-1 truncate font-display text-sm font-semibold">{formatLong(range?.to)}</p>
                 </div>
               </div>
@@ -215,37 +225,39 @@ export function BookingSection() {
               />
 
               <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-4">
-                {legend.map((l) => (
-                  <span key={l.label} className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className={`h-3 w-3 rounded-[4px] ${l.className}`} />
-                    {l.label}
-                  </span>
-                ))}
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="h-3 w-3 rounded-[4px] bg-primary/85" />
+                  {t.occupied}
+                </span>
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="h-3 w-3 rounded-[4px] bg-secondary border border-border" />
+                  {t.available}
+                </span>
               </div>
             </CardContent>
           </Card>
 
           <form onSubmit={submit} className="mt-8">
-            <h3 className="font-display text-xl font-semibold">Contanos sobre tu viaje</h3>
+            <h3 className="font-display text-xl font-semibold">{t.yourTrip}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Reserva para <span className="font-semibold text-foreground">{activeProp.name}</span> ({activeProp.address}).
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="nombre">Nombre</Label>
+                <Label htmlFor="nombre">{t.firstName}</Label>
                 <Input id="nombre" placeholder="Valentina" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="apellido">Apellido</Label>
+                <Label htmlFor="apellido">{t.lastName}</Label>
                 <Input id="apellido" placeholder="Rossi" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t.email}</Label>
                 <Input id="email" type="email" placeholder="vos@email.com" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Label htmlFor="whatsapp">{t.phone}</Label>
                 <Input id="whatsapp" placeholder="+54 9 294 ..." required />
               </div>
               <div className="space-y-2">
@@ -293,7 +305,7 @@ export function BookingSection() {
             </div>
 
             <Button type="submit" size="lg" className="mt-6 w-full rounded-full sm:w-auto sm:px-10">
-              Consultar disponibilidad en {activeProp.name}
+              {t.sendInquiry}
             </Button>
           </form>
         </div>
@@ -303,7 +315,7 @@ export function BookingSection() {
             <CardContent className="p-6">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="font-display text-2xl font-semibold">{formatARS(displayRatePerNight)}</p>
-                <span className="text-sm text-muted-foreground">{nights > 0 ? "promedio / noche" : "por noche"}</span>
+                <span className="text-sm text-muted-foreground">{nights > 0 ? `/${t.nights}` : `/${t.nights}`}</span>
               </div>
               <p className="mt-1 text-xs text-teal font-medium">{activeProp.name}</p>
 
@@ -317,14 +329,14 @@ export function BookingSection() {
                         key={idx}
                         label={
                           priceCalc.breakdown.length > 1
-                            ? `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? "noche" : "noches"} (${item.label})`
-                            : `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? "noche" : "noches"}`
+                            ? `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? t.nights : t.nights} (${item.label})`
+                            : `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? t.nights : t.nights}`
                         }
                         value={formatARS(item.total)}
                       />
                     ))
                   ) : (
-                    <Row label={`${formatARS(basePrice)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
+                    <Row label={`${formatARS(displayRatePerNight)} × ${nights} ${t.nights}`} value={formatARS(total)} />
                   )}
                   {priceCalc && priceCalc.discountAmount > 0 && (
                     <Row label={priceCalc.discountLabel} value={`-${formatARS(priceCalc.discountAmount)}`} />
