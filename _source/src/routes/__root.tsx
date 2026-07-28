@@ -33,34 +33,64 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
+  console.error("TanStack Root Error caught:", error);
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
+  const handleClearCacheAndReload = () => {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (e) {
+      console.error(e);
+    }
+    window.location.reload();
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Error al cargar la página
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
+      <div className="w-full max-w-lg rounded-3xl border border-border/80 bg-card p-6 sm:p-8 shadow-lift text-center space-y-4">
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-destructive/10 text-destructive">
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+
+        <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">
+          Ocurrió un inconveniente al cargar la página
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Ocurrió un inconveniente. Puedes intentar recargar la página.
+        <p className="text-sm text-muted-foreground">
+          Se detectó una excepción temporal en la ejecución de la aplicación.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+
+        {error?.message && (
+          <div className="mt-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-3.5 text-left">
+            <p className="font-mono text-xs font-semibold text-destructive">Detalle del error:</p>
+            <p className="font-mono text-xs text-foreground/80 mt-1 break-words leading-relaxed">{error.message}</p>
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-wrap justify-center gap-2 pt-2">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Reintentar
           </button>
+          <button
+            onClick={handleClearCacheAndReload}
+            className="inline-flex items-center justify-center rounded-full border border-border bg-secondary/50 px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+          >
+            Limpiar caché y recargar
+          </button>
           <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            href={window.location.pathname.startsWith("/barilochesuite") ? "/barilochesuite/" : "/"}
+            className="inline-flex items-center justify-center rounded-full border border-transparent px-5 py-2.5 text-sm font-medium text-teal hover:underline"
           >
             Ir al inicio
           </a>
