@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { gallery as initialGallery, galleryCategories, type MediaItem } from "@/data/site";
-import { supabase } from "@/lib/supabase";
+import { galleryService, PropertyItem, propertyService } from "@/lib/services";
 
 const typeBadge: Record<MediaItem["type"], string | null> = {
   foto: null,
@@ -16,40 +16,34 @@ const typeBadge: Record<MediaItem["type"], string | null> = {
   tour: "Tour 360°",
 };
 
-export function GalleryExplorer({ compact = false }: { compact?: boolean }) {
+export function GalleryExplorer({
+  compact = false,
+  propertyId,
+}: {
+  compact?: boolean;
+  propertyId?: string;
+}) {
   const [filter, setFilter] = useState<string>("todas");
+  const [selectedPropertyFilter, setSelectedPropertyFilter] = useState<string>(propertyId || "todas");
+  const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [view, setView] = useState<"grid" | "masonry">("masonry");
   const [index, setIndex] = useState<number | null>(null);
   const [zoom, setZoom] = useState(false);
   const [galleryItems, setGalleryItems] = useState<MediaItem[]>(initialGallery);
 
   useEffect(() => {
-    const loadSupabaseGallery = async () => {
+    const loadGalleryData = async () => {
       try {
-        const { data, error } = await supabase
-          .from("gallery_media")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (!error && data && data.length > 0) {
-          setGalleryItems(
-            data.map((item) => ({
-              id: item.id,
-              src: item.src,
-              title: item.title,
-              category: item.category as any,
-              type: item.type as any,
-              ratio: item.ratio as any,
-              featured: item.featured,
-            }))
-          );
-        }
+        const props = await propertyService.getAll();
+        setProperties(props);
+        const data = await galleryService.getAll(propertyId || selectedPropertyFilter);
+        setGalleryItems(data as any);
       } catch (e) {
         console.error("Error cargando galería pública:", e);
       }
     };
-    loadSupabaseGallery();
-  }, []);
+    loadGalleryData();
+  }, [propertyId, selectedPropertyFilter]);
 
   // Filtrar únicamente las categorías que poseen al menos un elemento cargado
   const availableCategories = useMemo(() => {
@@ -66,10 +60,13 @@ export function GalleryExplorer({ compact = false }: { compact?: boolean }) {
   }, [galleryItems]);
 
   const items = useMemo(() => {
-    if (filter === "todas") return galleryItems;
-    if (filter === "videos") return galleryItems.filter((g) => g.type === "video" || g.type === "video-vertical");
-    if (filter === "tour360") return galleryItems.filter((g) => g.type === "tour" || (g.category as string) === "tour360");
-    return galleryItems.filter((g) => g.category === filter);
+    let filtered = galleryItems;
+    if (filter !== "todas") {
+      if (filter === "videos") filtered = filtered.filter((g) => g.type === "video" || g.type === "video-vertical");
+      else if (filter === "tour360") filtered = filtered.filter((g) => g.type === "tour" || (g.category as string) === "tour360");
+      else filtered = filtered.filter((g) => g.category === filter);
+    }
+    return filtered;
   }, [filter, galleryItems]);
 
   const visible = compact ? items.slice(0, 6) : items;
@@ -82,7 +79,37 @@ export function GalleryExplorer({ compact = false }: { compact?: boolean }) {
   };
 
   return (
-    <div>
+    <div className="space-y-6">
+      {!propertyId && properties.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-border/60">
+          <button
+            onClick={() => setSelectedPropertyFilter("todas")}
+            className={cn(
+              "rounded-xl px-4 py-2 text-xs font-semibold transition-all shrink-0",
+              selectedPropertyFilter === "todas"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+            )}
+          >
+            Todas las Propiedades
+          </button>
+          {properties.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setSelectedPropertyFilter(p.id)}
+              className={cn(
+                "rounded-xl px-4 py-2 text-xs font-semibold transition-all shrink-0",
+                selectedPropertyFilter === p.id
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-2">
           {availableCategories.map((c) => (

@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 import { reservations as mockReservations, leads as mockLeads, clients as mockClients, rateRules as mockRateRules, blocks as mockBlocks } from "@/data/admin";
-import { reviews as mockReviews, places as mockPlaces } from "@/data/site";
+import { reviews as mockReviews, places as mockPlaces, gallery as mockGallery } from "@/data/site";
 
 export interface PropertyItem {
   id: string;
@@ -764,3 +764,54 @@ export const placeService = {
     if (error) throw error;
   }
 };
+
+// Servicios de Galería Multimedia
+export const galleryService = {
+  async getAll(propertyId?: string) {
+    let query = supabase.from("gallery_media").select("*").order("created_at", { ascending: false });
+    if (propertyId && propertyId !== "todas") {
+      query = query.eq("property_id", propertyId);
+    }
+    const { data, error } = await query;
+    if (error || !data || data.length === 0) return mockGallery;
+    return data.map((item) => ({
+      id: item.id,
+      propertyId: item.property_id || "p_nahuel",
+      src: item.src,
+      title: item.title,
+      category: item.category,
+      type: item.type,
+      ratio: item.ratio,
+      featured: !!item.featured,
+    }));
+  },
+  async create(item: any) {
+    const { data, error } = await supabase.from("gallery_media").insert([{
+      id: item.id || `m_${Date.now()}`,
+      property_id: item.propertyId || "p_nahuel",
+      src: item.src,
+      title: item.title,
+      category: item.category,
+      type: item.type,
+      ratio: item.ratio || "wide",
+      featured: item.featured || false,
+    }]).select();
+    if (error) throw error;
+    const g = data[0];
+    return {
+      id: g.id,
+      propertyId: g.property_id || "p_nahuel",
+      src: g.src,
+      title: g.title,
+      category: g.category,
+      type: g.type,
+      ratio: g.ratio,
+      featured: g.featured,
+    };
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from("gallery_media").delete().eq("id", id);
+    if (error) throw error;
+  }
+};
+

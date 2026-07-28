@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Block, formatARS, property as defaultProperty, Reservation } from "@/data/site";
 import { buildOccupancyMap, checkRangeOverlap, formatLong, nightsBetween, sameDay } from "@/lib/dates";
+import { GalleryExplorer } from "@/components/public/GalleryExplorer";
 import { blockService, PropertyItem, propertyService, reservationService, reviewService } from "@/lib/services";
 
 export const Route = createFileRoute("/propiedad/$id")({
@@ -198,6 +199,16 @@ function DetallePropiedad() {
                   <p className="text-xs text-muted-foreground">{prop.address}</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Galería Exclusiva de la Propiedad */}
+          <Card className="border-border/70 shadow-soft">
+            <CardHeader>
+              <CardTitle className="font-display text-xl">Galería de fotos de {prop.name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <GalleryExplorer propertyId={prop.id} />
             </CardContent>
           </Card>
 

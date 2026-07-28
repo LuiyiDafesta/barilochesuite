@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { gallery as initialGallery, galleryCategories, GalleryCategory, MediaItem } from "@/data/site";
-import { supabase } from "@/lib/supabase";
+import { galleryCategories, GalleryCategory, MediaItem } from "@/data/site";
+import { galleryService, PropertyItem, propertyService } from "@/lib/services";
 
 export const Route = createFileRoute("/admin/galeria")({
   component: GaleriaAdmin,
@@ -18,40 +18,31 @@ export const Route = createFileRoute("/admin/galeria")({
 
 function GaleriaAdmin() {
   const [items, setItems] = useState<MediaItem[]>([]);
+  const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<GalleryCategory>("exterior");
   const [selectedType, setSelectedType] = useState<"foto" | "video" | "video-vertical" | "drone" | "tour">("foto");
+  const [targetPropertyId, setTargetPropertyId] = useState<string>("p_nahuel");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchGallery = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("gallery_media")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const activeProp = localStorage.getItem("active_property_id") || "todas";
+      const props = await propertyService.getAll();
+      setProperties(props);
 
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setItems(
-          data.map((item) => ({
-            id: item.id,
-            src: item.src,
-            title: item.title,
-            category: item.category as GalleryCategory,
-            type: item.type as any,
-            ratio: item.ratio as any,
-            featured: item.featured,
-          }))
-        );
-      } else {
-        setItems(initialGallery);
+      if (activeProp !== "todas") {
+        setTargetPropertyId(activeProp);
+      } else if (props.length > 0) {
+        setTargetPropertyId(props[0].id);
       }
+
+      const galleryData = await galleryService.getAll(activeProp);
+      setItems(galleryData as any);
     } catch (err) {
-      console.error("Error al cargar galería de Supabase:", err);
-      setItems(initialGallery);
+      console.error("Error al cargar galería:", err);
     } finally {
       setLoading(false);
     }
@@ -59,6 +50,9 @@ function GaleriaAdmin() {
 
   useEffect(() => {
     fetchGallery();
+    const handlePropChange = () => fetchGallery();
+    window.addEventListener("property_changed", handlePropChange);
+    return () => window.removeEventListener("property_changed", handlePropChange);
   }, []);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,7 +67,6 @@ function GaleriaAdmin() {
     const toastId = toast.loading("Subiendo a Backblaze B2...");
 
     try {
-      // Calcular URL de upload.php relativa a la carpeta raíz de la aplicación (/barilochesuite/upload.php)
       const uploadUrl = window.location.origin + window.location.pathname.replace(/\/admin\/?.*$/, "") + "/upload.php";
       
       const response = await fetch(uploadUrl, {
@@ -97,6 +90,7 @@ function GaleriaAdmin() {
       const isVideo = file.type.startsWith("video/");
       const newItem = {
         id: `m_${Date.now()}`,
+        propertyId: targetPropertyId,
         src: result.url,
         title: file.name.split(".")[0] || "Nuevo Medio",
         category: selectedCategory,
@@ -105,22 +99,7 @@ function GaleriaAdmin() {
         featured: false,
       };
 
-      // Guardar registro en Supabase
-      const { error: dbError } = await supabase.from("gallery_media").insert([
-        {
-          id: newItem.id,
-          src: newItem.src,
-          title: newItem.title,
-          category: newItem.category,
-          type: newItem.type,
-          ratio: newItem.ratio,
-          featured: newItem.featured,
-        },
-      ]);
-
-      if (dbError) {
-        console.warn("Advertencia al guardar en DB:", dbError);
-      }
+      await galleryService.create(newItem);
 
       toast.success("Archivo subido exitosamente a Backblaze B2", { id: toastId });
       fetchGallery();
@@ -135,9 +114,7 @@ function GaleriaAdmin() {
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase.from("gallery_media").delete().eq("id", id);
-      if (error) throw error;
-
+      await galleryService.delete(id);
       setItems((prev) => prev.filter((item) => item.id !== id));
       toast.success("Medio eliminado correctamente");
     } catch (err: any) {
@@ -177,7 +154,23 @@ function GaleriaAdmin() {
 
       <Card className="p-4 border-border/70">
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-[180px]">
+            <label className="text-xs font-medium text-muted-foreground block mb-1">Propiedad Asignada</label>
+            <Select value={targetPropertyId} onValueChange={(val) => setTargetPropertyId(val)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Propiedad" />
+              </SelectTrigger>
+              <SelectContent>
+                {properties.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex-1 min-w-[180px]">
             <label className="text-xs font-medium text-muted-foreground block mb-1">Categoría</label>
             <Select value={selectedCategory} onValueChange={(val: GalleryCategory) => setSelectedCategory(val)}>
               <SelectTrigger className="w-full">
@@ -195,7 +188,7 @@ function GaleriaAdmin() {
             </Select>
           </div>
 
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-[180px]">
             <label className="text-xs font-medium text-muted-foreground block mb-1">Tipo de Medio</label>
             <Select value={selectedType} onValueChange={(val: any) => setSelectedType(val)}>
               <SelectTrigger className="w-full">
@@ -213,7 +206,7 @@ function GaleriaAdmin() {
 
           <div
             onClick={() => !uploading && fileInputRef.current?.click()}
-            className="flex-1 min-w-[280px] cursor-pointer rounded-xl border-2 border-dashed border-border bg-card/50 p-4 text-center transition-colors hover:border-teal/60 flex items-center justify-center gap-3"
+            className="flex-1 min-w-[260px] cursor-pointer rounded-xl border-2 border-dashed border-border bg-card/50 p-4 text-center transition-colors hover:border-teal/60 flex items-center justify-center gap-3"
           >
             <Upload className="h-5 w-5 text-muted-foreground" />
             <div className="text-left">
