@@ -112,21 +112,26 @@ export const calculateEstimatedPrice = (
   checkInStr: string,
   checkOutStr: string,
   rateRules: any[] = [],
-  settings: any = {}
+  settings: any = {},
+  overrideBasePrice?: number
 ) => {
-  if (!checkInStr || !checkOutStr) return { nights: 0, amount: 0 };
+  if (!checkInStr || !checkOutStr) return { nights: 0, amount: 0, averagePerNight: 0 };
   const dFrom = toDate(checkInStr);
   const dTo = toDate(checkOutStr);
   const nights = nightsBetween(dFrom, dTo);
-  if (nights <= 0) return { nights: 0, amount: 0 };
+  if (nights <= 0) return { nights: 0, amount: 0, averagePerNight: 0 };
 
-  const basePrice = settings.basePrice || 185000;
-  const weekendSurcharge = (settings.weekendSurchargePercent || 15) / 100;
+  const basePrice = overrideBasePrice || settings.basePrice || 185000;
+  const weekendSurcharge = (settings.weekendSurchargePercent || 0) / 100;
   let totalSubtotal = 0;
 
   const dates = eachDay(dFrom, new Date(dTo.getTime() - 86400000));
   dates.forEach((d) => {
-    const dStr = d.toISOString().split("T")[0];
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const dStr = `${year}-${month}-${day}`;
+
     const isWeekend = d.getDay() === 5 || d.getDay() === 6;
 
     // Buscar regla de temporada que cubra este día
@@ -145,9 +150,13 @@ export const calculateEstimatedPrice = (
     totalSubtotal *= (1 - (settings.weeklyDiscountPercent || 10) / 100);
   }
 
+  const amount = Math.round(totalSubtotal);
+  const averagePerNight = Math.round(amount / nights);
+
   return {
     nights,
-    amount: Math.round(totalSubtotal),
+    amount,
+    averagePerNight,
   };
 };
 

@@ -13,8 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Block, formatARS, property, Reservation } from "@/data/site";
-import { buildOccupancyMap, checkRangeOverlap, formatLong, nightsBetween, sameDay } from "@/lib/dates";
-import { blockService, PropertyItem, propertyService, reservationService, settingService } from "@/lib/services";
+import { buildOccupancyMap, calculateEstimatedPrice, checkRangeOverlap, formatLong, nightsBetween, sameDay } from "@/lib/dates";
+import { blockService, PropertyItem, propertyService, rateService, reservationService, settingService } from "@/lib/services";
 
 // Leyenda Pública simplificada
 const legend = [
@@ -26,6 +26,7 @@ export function BookingSection() {
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [selectedPropId, setSelectedPropId] = useState<string>("p_nahuel");
   const [settings, setSettings] = useState<any>({});
+  const [rateRules, setRateRules] = useState<any[]>([]);
 
   const [range, setRange] = useState<DateRange | undefined>();
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -43,12 +44,14 @@ export function BookingSection() {
         const mainProp = propsData.find((p) => p.isMain) || propsData[0];
         if (mainProp) setSelectedPropId(mainProp.id);
 
-        const [resData, blockData] = await Promise.all([
+        const [resData, blockData, rateData] = await Promise.all([
           reservationService.getAll(mainProp?.id),
           blockService.getAll(mainProp?.id),
+          rateService.getAll(mainProp?.id),
         ]);
         setReservations(resData as any);
         setBlocks(blockData as any);
+        setRateRules(rateData);
       } catch (e) {
         console.error("Error al cargar datos públicos de Supabase:", e);
       }
@@ -60,12 +63,14 @@ export function BookingSection() {
     setSelectedPropId(propId);
     setRange(undefined);
     try {
-      const [resData, blockData] = await Promise.all([
+      const [resData, blockData, rateData] = await Promise.all([
         reservationService.getAll(propId),
         blockService.getAll(propId),
+        rateService.getAll(propId),
       ]);
       setReservations(resData as any);
       setBlocks(blockData as any);
+      setRateRules(rateData);
     } catch (e) {
       console.error("Error al filtrar por propiedad:", e);
     }
@@ -93,8 +98,24 @@ export function BookingSection() {
     ];
   }, [occupancy]);
 
+  const priceCalc = useMemo(() => {
+    if (!range?.from || !range?.to || !activeProp) return null;
+    const yearFrom = range.from.getFullYear();
+    const monthFrom = String(range.from.getMonth() + 1).padStart(2, "0");
+    const dayFrom = String(range.from.getDate()).padStart(2, "0");
+    const fromStr = `${yearFrom}-${monthFrom}-${dayFrom}`;
+
+    const yearTo = range.to.getFullYear();
+    const monthTo = String(range.to.getMonth() + 1).padStart(2, "0");
+    const dayTo = String(range.to.getDate()).padStart(2, "0");
+    const toStr = `${yearTo}-${monthTo}-${dayTo}`;
+
+    return calculateEstimatedPrice(fromStr, toStr, rateRules, settings, activeProp.basePrice);
+  }, [range, rateRules, settings, activeProp]);
+
   const basePrice = activeProp.basePrice || property.basePrice;
-  const subtotal = nights * basePrice;
+  const subtotal = priceCalc && priceCalc.nights > 0 ? priceCalc.amount : nights * basePrice;
+  const displayRatePerNight = priceCalc && priceCalc.nights > 0 ? priceCalc.averagePerNight : basePrice;
   const cleaningFee = Number(settings.cleaningFee || 0);
   const taxPercent = Number(settings.taxPercent || 0);
   const taxes = taxPercent > 0 ? Math.round((subtotal + cleaningFee) * (taxPercent / 100)) : 0;
@@ -280,8 +301,8 @@ export function BookingSection() {
           <Card className="border-border/70 shadow-lift">
             <CardContent className="p-6">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="font-display text-2xl font-semibold">{formatARS(basePrice)}</p>
-                <span className="text-sm text-muted-foreground">por noche</span>
+                <p className="font-display text-2xl font-semibold">{formatARS(displayRatePerNight)}</p>
+                <span className="text-sm text-muted-foreground">{nights > 0 ? "promedio / noche" : "por noche"}</span>
               </div>
               <p className="mt-1 text-xs text-teal font-medium">{activeProp.name}</p>
 
@@ -289,7 +310,7 @@ export function BookingSection() {
 
               {nights > 0 ? (
                 <div className="space-y-3 text-sm">
-                  <Row label={`${formatARS(basePrice)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
+                  <Row label={`${formatARS(displayRatePerNight)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
                   {cleaningFee > 0 && <Row label="Limpieza final" value={formatARS(cleaningFee)} />}
                   {taxes > 0 && <Row label={`Impuestos (${taxPercent}%)`} value={formatARS(taxes)} />}
                   <Separator className="my-4" />

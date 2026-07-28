@@ -29,9 +29,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Block, formatARS, property as defaultProperty, Reservation } from "@/data/site";
-import { buildOccupancyMap, checkRangeOverlap, formatLong, nightsBetween, sameDay } from "@/lib/dates";
+import { buildOccupancyMap, calculateEstimatedPrice, checkRangeOverlap, formatLong, nightsBetween, sameDay } from "@/lib/dates";
 import { GalleryExplorer } from "@/components/public/GalleryExplorer";
-import { blockService, PropertyItem, propertyService, reservationService, reviewService, settingService } from "@/lib/services";
+import { blockService, PropertyItem, propertyService, rateService, reservationService, reviewService, settingService } from "@/lib/services";
 
 export const Route = createFileRoute("/propiedad/$id")({
   component: DetallePropiedad,
@@ -41,6 +41,7 @@ function DetallePropiedad() {
   const { id } = Route.useParams();
   const [prop, setProp] = useState<PropertyItem | null>(null);
   const [settings, setSettings] = useState<any>({});
+  const [rateRules, setRateRules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [range, setRange] = useState<DateRange | undefined>();
@@ -61,14 +62,16 @@ function DetallePropiedad() {
         setProp(found);
 
         if (found) {
-          const [resData, blockData, revData] = await Promise.all([
+          const [resData, blockData, revData, rateData] = await Promise.all([
             reservationService.getAll(found.id),
             blockService.getAll(found.id),
             reviewService.getAll(found.id),
+            rateService.getAll(found.id),
           ]);
           setReservations(resData as any);
           setBlocks(blockData as any);
           setReviews(revData);
+          setRateRules(rateData);
         }
       } catch (e) {
         console.error("Error al cargar detalle de propiedad:", e);
@@ -81,6 +84,21 @@ function DetallePropiedad() {
 
   const occupancy = useMemo(() => buildOccupancyMap(reservations, blocks), [reservations, blocks]);
   const nights = nightsBetween(range?.from, range?.to);
+
+  const priceCalc = useMemo(() => {
+    if (!range?.from || !range?.to || !prop) return null;
+    const yearFrom = range.from.getFullYear();
+    const monthFrom = String(range.from.getMonth() + 1).padStart(2, "0");
+    const dayFrom = String(range.from.getDate()).padStart(2, "0");
+    const fromStr = `${yearFrom}-${monthFrom}-${dayFrom}`;
+
+    const yearTo = range.to.getFullYear();
+    const monthTo = String(range.to.getMonth() + 1).padStart(2, "0");
+    const dayTo = String(range.to.getDate()).padStart(2, "0");
+    const toStr = `${yearTo}-${monthTo}-${dayTo}`;
+
+    return calculateEstimatedPrice(fromStr, toStr, rateRules, settings, prop.basePrice);
+  }, [range, rateRules, settings, prop]);
 
   const allOccupiedDates = useMemo(() => {
     return [
@@ -103,7 +121,8 @@ function DetallePropiedad() {
   if (!prop) throw notFound();
 
   const basePrice = prop.basePrice || 185000;
-  const subtotal = nights * basePrice;
+  const subtotal = priceCalc && priceCalc.nights > 0 ? priceCalc.amount : nights * basePrice;
+  const displayRatePerNight = priceCalc && priceCalc.nights > 0 ? priceCalc.averagePerNight : basePrice;
   const cleaningFee = Number(settings.cleaningFee || 0);
   const taxPercent = Number(settings.taxPercent || 0);
   const taxes = taxPercent > 0 ? Math.round((subtotal + cleaningFee) * (taxPercent / 100)) : 0;
@@ -344,8 +363,8 @@ function DetallePropiedad() {
           <Card className="border-border/70 shadow-lift">
             <CardContent className="p-6">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="font-display text-2xl font-semibold">{formatARS(basePrice)}</p>
-                <span className="text-sm text-muted-foreground">por noche</span>
+                <p className="font-display text-2xl font-semibold">{formatARS(displayRatePerNight)}</p>
+                <span className="text-sm text-muted-foreground">{nights > 0 ? "promedio / noche" : "por noche"}</span>
               </div>
               <p className="mt-1 text-xs text-teal font-medium">{prop.name}</p>
 
@@ -353,7 +372,7 @@ function DetallePropiedad() {
 
               {nights > 0 ? (
                 <div className="space-y-3 text-sm">
-                  <Row label={`${formatARS(basePrice)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
+                  <Row label={`${formatARS(displayRatePerNight)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
                   {cleaningFee > 0 && (
                     <Row label="Limpieza final" value={formatARS(cleaningFee)} />
                   )}
