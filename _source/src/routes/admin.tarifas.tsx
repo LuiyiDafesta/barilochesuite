@@ -35,6 +35,7 @@ function Tarifas() {
   // Precios Base y Ajustes Globales
   const [basePrice, setBasePrice] = useState(185000);
   const [cleaningFee, setCleaningFee] = useState(45000);
+  const [taxPercent, setTaxPercent] = useState(0);
   const [weekendPercent, setWeekendPercent] = useState([15]);
 
   // Reglas y Descuentos
@@ -86,6 +87,7 @@ function Tarifas() {
       }
 
       setCleaningFee(settings.cleaningFee);
+      setTaxPercent(settings.taxPercent || 0);
       setWeekendPercent([settings.weekendSurchargePercent]);
       setWeeklyEnabled(settings.weeklyDiscountEnabled);
       setWeeklyPercent(settings.weeklyDiscountPercent);
@@ -126,6 +128,7 @@ function Tarifas() {
       await settingService.update({
         basePrice,
         cleaningFee,
+        taxPercent,
         weekendSurchargePercent: weekendPercent[0],
         weeklyDiscountEnabled: weeklyEnabled,
         weeklyDiscountPercent: weeklyPercent,
@@ -242,6 +245,21 @@ function Tarifas() {
                     value={cleaningFee}
                     onChange={(e) => setCleaningFee(Number(e.target.value))}
                   />
+                  <p className="text-xs text-muted-foreground">Si es 0, no se cobra ni figura en el desglose público.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="impuestos">Impuestos / Tasas opcionales (% sobre subtotal)</Label>
+                  <Input
+                    id="impuestos"
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={taxPercent}
+                    onChange={(e) => setTaxPercent(Number(e.target.value))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Opcional. Si es 0%, NO figurará en la web pública. Si es mayor a 0 (ej: 21%), se desglosará automáticamente.
+                  </p>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">

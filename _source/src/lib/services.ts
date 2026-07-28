@@ -157,6 +157,9 @@ export const generateUniqueReservationCode = async (): Promise<string> => {
 // Servicios de Ajustes de Precios y Reglas Globales
 export const settingService = {
   async get() {
+    const localTax = localStorage.getItem("site_tax_percent");
+    const fallbackTax = localTax !== null ? Number(localTax) : 0;
+
     const { data, error } = await supabase.from("site_settings").select("*").eq("id", "default").single();
     if (error || !data) {
       return {
@@ -167,6 +170,7 @@ export const settingService = {
         houseRules: "Check in 15:00 · Check out 11:00. No se permiten fiestas ni eventos.",
         basePrice: 185000,
         cleaningFee: 45000,
+        taxPercent: fallbackTax,
         weekendSurchargePercent: 15,
         weeklyDiscountEnabled: true,
         weeklyDiscountPercent: 10,
@@ -188,6 +192,7 @@ export const settingService = {
       houseRules: data.house_rules || "Check in 15:00 · Check out 11:00. No se permiten fiestas ni eventos.",
       basePrice: data.base_price != null ? Number(data.base_price) : 185000,
       cleaningFee: data.cleaning_fee != null ? Number(data.cleaning_fee) : 45000,
+      taxPercent: data.tax_percent != null ? Number(data.tax_percent) : fallbackTax,
       weekendSurchargePercent: data.weekend_surcharge_percent != null ? Number(data.weekend_surcharge_percent) : 15,
       weeklyDiscountEnabled: data.weekly_discount_enabled ?? true,
       weeklyDiscountPercent: data.weekly_discount_percent != null ? Number(data.weekly_discount_percent) : 10,
@@ -202,7 +207,11 @@ export const settingService = {
     };
   },
   async update(settings: any) {
-    const { error } = await supabase.from("site_settings").upsert({
+    if (settings.taxPercent !== undefined) {
+      localStorage.setItem("site_tax_percent", String(settings.taxPercent));
+    }
+
+    const payload: any = {
       id: "default",
       business_name: settings.businessName,
       address: settings.address,
@@ -223,8 +232,18 @@ export const settingService = {
       deposit_required_enabled: settings.depositRequiredEnabled,
       deposit_percent: settings.depositPercent,
       updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from("site_settings").upsert({
+      ...payload,
+      tax_percent: settings.taxPercent || 0,
     });
-    if (error) throw error;
+
+    if (error) {
+      // Reintentar sin tax_percent si la columna aun no existe en el esquema de Supabase DB
+      const { error: retryError } = await supabase.from("site_settings").upsert(payload);
+      if (retryError) throw retryError;
+    }
   }
 };
 

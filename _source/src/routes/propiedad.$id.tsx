@@ -105,7 +105,9 @@ function DetallePropiedad() {
   const basePrice = prop.basePrice || 185000;
   const subtotal = nights * basePrice;
   const cleaningFee = Number(settings.cleaningFee || 0);
-  const total = subtotal + cleaningFee;
+  const taxPercent = Number(settings.taxPercent || 0);
+  const taxes = taxPercent > 0 ? Math.round((subtotal + cleaningFee) * (taxPercent / 100)) : 0;
+  const total = subtotal + cleaningFee + taxes;
 
   const isDayDisabled = (day: Date) => {
     const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
@@ -354,6 +356,9 @@ function DetallePropiedad() {
                   <Row label={`${formatARS(basePrice)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
                   {cleaningFee > 0 && (
                     <Row label="Limpieza final" value={formatARS(cleaningFee)} />
+                  )}
+                  {taxes > 0 && (
+                    <Row label={`Impuestos (${taxPercent}%)`} value={formatARS(taxes)} />
                   )}
                   <Separator className="my-4" />
                   <div className="flex items-center justify-between font-bold">

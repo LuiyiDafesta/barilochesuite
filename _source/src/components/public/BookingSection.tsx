@@ -96,7 +96,9 @@ export function BookingSection() {
   const basePrice = activeProp.basePrice || property.basePrice;
   const subtotal = nights * basePrice;
   const cleaningFee = Number(settings.cleaningFee || 0);
-  const total = subtotal + cleaningFee;
+  const taxPercent = Number(settings.taxPercent || 0);
+  const taxes = taxPercent > 0 ? Math.round((subtotal + cleaningFee) * (taxPercent / 100)) : 0;
+  const total = subtotal + cleaningFee + taxes;
 
   const isDayDisabled = (day: Date) => {
     const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
@@ -289,6 +291,7 @@ export function BookingSection() {
                 <div className="space-y-3 text-sm">
                   <Row label={`${formatARS(basePrice)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
                   {cleaningFee > 0 && <Row label="Limpieza final" value={formatARS(cleaningFee)} />}
+                  {taxes > 0 && <Row label={`Impuestos (${taxPercent}%)`} value={formatARS(taxes)} />}
                   <Separator className="my-4" />
                   <div className="flex items-center justify-between">
                     <span className="font-display text-base font-semibold">Total estimado</span>
