@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Block, formatARS, property, Reservation } from "@/data/site";
 import { buildOccupancyMap, checkRangeOverlap, formatLong, nightsBetween, sameDay } from "@/lib/dates";
-import { blockService, PropertyItem, propertyService, reservationService } from "@/lib/services";
+import { blockService, PropertyItem, propertyService, reservationService, settingService } from "@/lib/services";
 
 // Leyenda Pública simplificada
 const legend = [
@@ -25,6 +25,7 @@ const legend = [
 export function BookingSection() {
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [selectedPropId, setSelectedPropId] = useState<string>("p_nahuel");
+  const [settings, setSettings] = useState<any>({});
 
   const [range, setRange] = useState<DateRange | undefined>();
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -33,8 +34,12 @@ export function BookingSection() {
   useEffect(() => {
     const loadAll = async () => {
       try {
-        const propsData = await propertyService.getAll();
+        const [propsData, settsData] = await Promise.all([
+          propertyService.getAll(),
+          settingService.get(),
+        ]);
         setProperties(propsData);
+        setSettings(settsData);
         const mainProp = propsData.find((p) => p.isMain) || propsData[0];
         if (mainProp) setSelectedPropId(mainProp.id);
 
@@ -90,8 +95,8 @@ export function BookingSection() {
 
   const basePrice = activeProp.basePrice || property.basePrice;
   const subtotal = nights * basePrice;
-  const taxes = Math.round((subtotal + property.cleaningFee) * property.taxRate);
-  const total = subtotal + property.cleaningFee + taxes;
+  const cleaningFee = Number(settings.cleaningFee || 0);
+  const total = subtotal + cleaningFee;
 
   const isDayDisabled = (day: Date) => {
     const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
@@ -283,8 +288,7 @@ export function BookingSection() {
               {nights > 0 ? (
                 <div className="space-y-3 text-sm">
                   <Row label={`${formatARS(basePrice)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
-                  <Row label="Limpieza final" value={formatARS(property.cleaningFee)} />
-                  <Row label="Impuestos y servicios" value={formatARS(taxes)} />
+                  {cleaningFee > 0 && <Row label="Limpieza final" value={formatARS(cleaningFee)} />}
                   <Separator className="my-4" />
                   <div className="flex items-center justify-between">
                     <span className="font-display text-base font-semibold">Total estimado</span>

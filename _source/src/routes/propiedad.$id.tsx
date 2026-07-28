@@ -31,7 +31,7 @@ import { Separator } from "@/components/ui/separator";
 import { Block, formatARS, property as defaultProperty, Reservation } from "@/data/site";
 import { buildOccupancyMap, checkRangeOverlap, formatLong, nightsBetween, sameDay } from "@/lib/dates";
 import { GalleryExplorer } from "@/components/public/GalleryExplorer";
-import { blockService, PropertyItem, propertyService, reservationService, reviewService } from "@/lib/services";
+import { blockService, PropertyItem, propertyService, reservationService, reviewService, settingService } from "@/lib/services";
 
 export const Route = createFileRoute("/propiedad/$id")({
   component: DetallePropiedad,
@@ -40,6 +40,7 @@ export const Route = createFileRoute("/propiedad/$id")({
 function DetallePropiedad() {
   const { id } = Route.useParams();
   const [prop, setProp] = useState<PropertyItem | null>(null);
+  const [settings, setSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
   const [range, setRange] = useState<DateRange | undefined>();
@@ -51,7 +52,11 @@ function DetallePropiedad() {
     const loadPropertyData = async () => {
       try {
         setLoading(true);
-        const propsData = await propertyService.getAll();
+        const [propsData, settsData] = await Promise.all([
+          propertyService.getAll(),
+          settingService.get(),
+        ]);
+        setSettings(settsData);
         const found = propsData.find((p) => p.id === id) || propsData[0];
         setProp(found);
 
@@ -99,8 +104,8 @@ function DetallePropiedad() {
 
   const basePrice = prop.basePrice || 185000;
   const subtotal = nights * basePrice;
-  const taxes = Math.round((subtotal + defaultProperty.cleaningFee) * defaultProperty.taxRate);
-  const total = subtotal + defaultProperty.cleaningFee + taxes;
+  const cleaningFee = Number(settings.cleaningFee || 0);
+  const total = subtotal + cleaningFee;
 
   const isDayDisabled = (day: Date) => {
     const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
@@ -346,9 +351,10 @@ function DetallePropiedad() {
 
               {nights > 0 ? (
                 <div className="space-y-3 text-sm">
-                  <Row label={`${formatARS(basePrice)} × ${nights} noches`} value={formatARS(subtotal)} />
-                  <Row label="Limpieza final" value={formatARS(defaultProperty.cleaningFee)} />
-                  <Row label="Impuestos" value={formatARS(taxes)} />
+                  <Row label={`${formatARS(basePrice)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
+                  {cleaningFee > 0 && (
+                    <Row label="Limpieza final" value={formatARS(cleaningFee)} />
+                  )}
                   <Separator className="my-4" />
                   <div className="flex items-center justify-between font-bold">
                     <span>Total estimado</span>
