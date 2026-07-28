@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Block, formatARS, property, Reservation } from "@/data/site";
 import { buildOccupancyMap, calculateEstimatedPrice, checkRangeOverlap, formatLong, nightsBetween, sameDay } from "@/lib/dates";
+import { getCurrentLanguage, Language, translations } from "@/lib/i18n";
 import { blockService, PropertyItem, propertyService, rateService, reservationService, settingService } from "@/lib/services";
 
 // Leyenda Pública simplificada
