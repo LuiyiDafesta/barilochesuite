@@ -310,7 +310,24 @@ export function BookingSection() {
 
               {nights > 0 ? (
                 <div className="space-y-3 text-sm">
-                  <Row label={`${formatARS(displayRatePerNight)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
+                  {priceCalc && priceCalc.breakdown.length > 0 ? (
+                    priceCalc.breakdown.map((item, idx) => (
+                      <Row
+                        key={idx}
+                        label={
+                          priceCalc.breakdown.length > 1
+                            ? `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? "noche" : "noches"} (${item.label})`
+                            : `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? "noche" : "noches"}`
+                        }
+                        value={formatARS(item.total)}
+                      />
+                    ))
+                  ) : (
+                    <Row label={`${formatARS(basePrice)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
+                  )}
+                  {priceCalc && priceCalc.discountAmount > 0 && (
+                    <Row label={priceCalc.discountLabel} value={`-${formatARS(priceCalc.discountAmount)}`} />
+                  )}
                   {cleaningFee > 0 && <Row label="Limpieza final" value={formatARS(cleaningFee)} />}
                   {taxes > 0 && <Row label={`Impuestos (${taxPercent}%)`} value={formatARS(taxes)} />}
                   <Separator className="my-4" />

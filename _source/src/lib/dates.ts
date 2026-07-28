@@ -108,6 +108,13 @@ export const checkRangeOverlap = (
 /**
  * Recalcula automáticamente el precio estimado en función de las noches, las reglas por temporada y los descuentos activos.
  */
+export type PriceBreakdownItem = {
+  label: string;
+  nights: number;
+  pricePerNight: number;
+  total: number;
+};
+
 export const calculateEstimatedPrice = (
   checkInStr: string,
   checkOutStr: string,
@@ -115,15 +122,21 @@ export const calculateEstimatedPrice = (
   settings: any = {},
   overrideBasePrice?: number
 ) => {
-  if (!checkInStr || !checkOutStr) return { nights: 0, amount: 0, averagePerNight: 0 };
+  if (!checkInStr || !checkOutStr) {
+    return { nights: 0, subtotal: 0, discountAmount: 0, discountLabel: "", amount: 0, averagePerNight: 0, breakdown: [] };
+  }
   const dFrom = toDate(checkInStr);
   const dTo = toDate(checkOutStr);
   const nights = nightsBetween(dFrom, dTo);
-  if (nights <= 0) return { nights: 0, amount: 0, averagePerNight: 0 };
+  if (nights <= 0) {
+    return { nights: 0, subtotal: 0, discountAmount: 0, discountLabel: "", amount: 0, averagePerNight: 0, breakdown: [] };
+  }
 
   const basePrice = overrideBasePrice || settings.basePrice || 185000;
   const weekendSurcharge = (settings.weekendSurchargePercent || 0) / 100;
-  let totalSubtotal = 0;
+
+  // Agrupar noches por su tarifa/regla para desglose exacto
+  const priceGroups: Record<string, { label: string; count: number; price: number }> = {};
 
   const dates = eachDay(dFrom, new Date(dTo.getTime() - 86400000));
   dates.forEach((d) => {
@@ -136,27 +149,62 @@ export const calculateEstimatedPrice = (
 
     // Buscar regla de temporada que cubra este día
     const matchingRule = rateRules.find((r) => r.from <= dStr && r.to >= dStr);
+    let dayPrice = basePrice;
+    let label = "Tarifa base";
+
     if (matchingRule && matchingRule.price) {
-      totalSubtotal += Number(matchingRule.price);
-    } else {
-      totalSubtotal += isWeekend ? Math.round(basePrice * (1 + weekendSurcharge)) : basePrice;
+      dayPrice = Number(matchingRule.price);
+      label = matchingRule.name || matchingRule.type || "Temporada especial";
+    } else if (isWeekend && weekendSurcharge > 0) {
+      dayPrice = Math.round(basePrice * (1 + weekendSurcharge));
+      label = "Tarifa fin de semana";
     }
+
+    const key = `${label}_${dayPrice}`;
+    if (!priceGroups[key]) {
+      priceGroups[key] = { label, count: 0, price: dayPrice };
+    }
+    priceGroups[key].count += 1;
+  });
+
+  let totalSubtotal = 0;
+  const breakdown: PriceBreakdownItem[] = [];
+
+  Object.values(priceGroups).forEach((group) => {
+    const grpTotal = group.count * group.price;
+    totalSubtotal += grpTotal;
+    breakdown.push({
+      label: group.label,
+      nights: group.count,
+      pricePerNight: group.price,
+      total: grpTotal,
+    });
   });
 
   // Aplicar descuentos por estadía si corresponden
+  let discountAmount = 0;
+  let discountLabel = "";
   if (nights >= 28 && settings.monthlyDiscountEnabled) {
-    totalSubtotal *= (1 - (settings.monthlyDiscountPercent || 22) / 100);
+    const pct = settings.monthlyDiscountPercent || 22;
+    discountAmount = Math.round(totalSubtotal * (pct / 100));
+    discountLabel = `Descuento mensual (${pct}%)`;
   } else if (nights >= 7 && settings.weeklyDiscountEnabled) {
-    totalSubtotal *= (1 - (settings.weeklyDiscountPercent || 10) / 100);
+    const pct = settings.weeklyDiscountPercent || 10;
+    discountAmount = Math.round(totalSubtotal * (pct / 100));
+    discountLabel = `Descuento semanal (${pct}%)`;
   }
 
-  const amount = Math.round(totalSubtotal);
+  const amount = Math.max(0, Math.round(totalSubtotal - discountAmount));
   const averagePerNight = Math.round(amount / nights);
 
   return {
     nights,
+    subtotal: Math.round(totalSubtotal),
+    discountAmount,
+    discountLabel,
     amount,
     averagePerNight,
+    breakdown,
   };
 };
 
