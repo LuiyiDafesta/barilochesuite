@@ -9,6 +9,7 @@ import { useEffect } from "react";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { settingService } from "@/lib/services";
 
 function NotFoundComponent() {
   return (
@@ -100,6 +101,45 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
+function applyDynamicSEO(s: any) {
+  if (!s) return;
+  const title = s.metaTitle || s.businessName || "Duplex Turístico Bariloche";
+  if (title) document.title = title;
+
+  if (s.metaDescription) {
+    let descEl = document.getElementById("meta-description") as HTMLMetaElement;
+    if (!descEl) {
+      descEl = document.createElement("meta");
+      descEl.id = "meta-description";
+      descEl.name = "description";
+      document.head.appendChild(descEl);
+    }
+    descEl.content = s.metaDescription;
+  }
+
+  if (s.keywords) {
+    let keyEl = document.getElementById("meta-keywords") as HTMLMetaElement;
+    if (!keyEl) {
+      keyEl = document.createElement("meta");
+      keyEl.id = "meta-keywords";
+      keyEl.name = "keywords";
+      document.head.appendChild(keyEl);
+    }
+    keyEl.content = s.keywords;
+  }
+
+  if (s.faviconUrl) {
+    let favEl = document.getElementById("dynamic-favicon") as HTMLLinkElement;
+    if (!favEl) {
+      favEl = document.createElement("link");
+      favEl.id = "dynamic-favicon";
+      favEl.rel = "icon";
+      document.head.appendChild(favEl);
+    }
+    favEl.href = s.faviconUrl;
+  }
+}
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -108,6 +148,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    // 1. Aplicar sincrónicamente desde caché para cero parpadeo
+    try {
+      const cached = localStorage.getItem("cached_site_settings");
+      if (cached) applyDynamicSEO(JSON.parse(cached));
+    } catch {}
+
+    // 2. Cargar en vivo desde Supabase
+    settingService.get().then((s) => {
+      applyDynamicSEO(s);
+    }).catch((e) => console.error("Error al aplicar SEO dinámico:", e));
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

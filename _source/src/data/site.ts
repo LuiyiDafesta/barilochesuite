@@ -19,25 +19,25 @@ export const images = {
 };
 
 export const property = {
-  name: "Casa Nahuel",
-  tagline: "Departamento boutique frente al lago",
+  name: "Duplex Turístico Bariloche",
+  tagline: "Duplex exclusivo en Cerro Catedral",
   city: "San Carlos de Bariloche",
   region: "Patagonia, Argentina",
-  address: "Av. Bustillo km 6,4 — San Carlos de Bariloche, Río Negro",
+  address: "piedra del condor 300 cerro catedral, San Carlos de Bariloche, Argentina",
   guests: 4,
   bedrooms: 1,
   bathrooms: 1,
   checkIn: "15:00",
-  checkOut: "10:00",
-  basePrice: 185000,
-  cleaningFee: 45000,
-  taxRate: 0.21,
-  whatsapp: "+54 9 294 400 1234",
-  email: "reservas@casanahuel.com.ar",
-  instagram: "@casanahuel.bariloche",
-  facebook: "Casa Nahuel Bariloche",
-  rating: 4.94,
-  reviewsCount: 128,
+  checkOut: "11:00",
+  basePrice: 250000,
+  cleaningFee: 0,
+  taxRate: 0,
+  whatsapp: "+5491157534011",
+  email: "reservas@loquevaya.com",
+  instagram: "@duplexbariloche",
+  facebook: "Duplex Turístico Bariloche",
+  rating: 4.98,
+  reviewsCount: 42,
 };
 
 export const experiences = [

@@ -12,7 +12,16 @@ import { cn } from "@/lib/utils";
 export function Navbar({ transparent = false }: { transparent?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const [brandName, setBrandName] = useState("Bariloche Suite");
+  const [brandName, setBrandName] = useState(() => {
+    try {
+      const cached = localStorage.getItem("cached_site_settings");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.businessName) return parsed.businessName;
+      }
+    } catch {}
+    return "Duplex Turístico Bariloche";
+  });
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [enabledLangs, setEnabledLangs] = useState<Language[]>(["es"]);
   const [currentLang, setLangState] = useState<Language>(getCurrentLanguage());

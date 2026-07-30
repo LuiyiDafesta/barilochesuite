@@ -311,24 +311,24 @@ export const settingService = {
     const { data, error } = await supabase.from("site_settings").select("*").eq("id", "default").single();
 
     const defaults = {
-      businessName: "Bariloche Suite",
-      address: "Av. Bustillo Km 6,400 – San Carlos de Bariloche, Río Negro",
-      whatsapp: "+54 9 294 400 1234",
-      email: "reservas@barilochesuite.com",
-      houseRules: "Check in 15:00 · Check out 11:00. No se permiten fiestas ni eventos.",
-      basePrice: 185000,
-      cleaningFee: 45000,
+      businessName: "Duplex Turístico Bariloche",
+      address: "piedra del condor 300 cerro catedral, San Carlos de Bariloche, Argentina",
+      whatsapp: "+5491157534011",
+      email: "reservas@loquevaya.com",
+      houseRules: "Check in 15:00 · Check out 11:00. No se permiten fiestas ni eventos. Prohibido fumar.",
+      basePrice: 250000,
+      cleaningFee: 0,
       taxPercent: fallbackTax,
-      weekendSurchargePercent: 15,
-      weeklyDiscountEnabled: true,
+      weekendSurchargePercent: 0,
+      weeklyDiscountEnabled: false,
       weeklyDiscountPercent: 10,
-      monthlyDiscountEnabled: true,
+      monthlyDiscountEnabled: false,
       monthlyDiscountPercent: 22,
-      minNightsHighSeasonEnabled: true,
+      minNightsHighSeasonEnabled: false,
       minNightsHighSeason: 4,
       petsAllowedEnabled: false,
       petFeeAmount: 18000,
-      depositRequiredEnabled: true,
+      depositRequiredEnabled: false,
       depositPercent: 30,
 
       // Enterprise Branding & Languages
@@ -364,7 +364,7 @@ export const settingService = {
 
       // CMS Footer
       footerDescription: "Alojamiento boutique de alta gama frente al lago Nahuel Huapi. Confort, diseño y vistas infinitas en San Carlos de Bariloche.",
-      copyrightText: "Bariloche Suite. Todos los derechos reservados.",
+      copyrightText: "Duplex Turístico Bariloche. Todos los derechos reservados.",
       instagramUrl: "https://instagram.com",
       facebookUrl: "https://facebook.com",
 
@@ -375,7 +375,7 @@ export const settingService = {
       customHeadScript: "",
 
       // SEO & Geo
-      metaTitle: "Bariloche Suite — Hospedaje Boutique frente al lago en Bariloche",
+      metaTitle: "Duplex Turístico Bariloche — Hospedaje Boutique frente al lago",
       metaDescription: "Alojate en departamentos de alta gama frente al Nahuel Huapi en San Carlos de Bariloche.",
       keywords: "Bariloche, hospedaje, departamento, alquiler vacacional, Nahuel Huapi, Cerro Catedral",
       ogImage: "",
@@ -403,34 +403,36 @@ export const settingService = {
       }, 300);
     }
 
-    if (error || !data) {
-      return { ...defaults, ...dbCms, ...localEnt };
-    }
-
-    return {
+    const result = {
       ...defaults,
-      businessName: data.business_name || defaults.businessName,
-      address: data.address || defaults.address,
-      whatsapp: data.whatsapp || defaults.whatsapp,
-      email: data.email || defaults.email,
-      houseRules: data.house_rules || defaults.houseRules,
-      basePrice: data.base_price != null ? Number(data.base_price) : defaults.basePrice,
-      cleaningFee: data.cleaning_fee != null ? Number(data.cleaning_fee) : defaults.cleaningFee,
-      taxPercent: data.tax_percent != null ? Number(data.tax_percent) : fallbackTax,
-      weekendSurchargePercent: data.weekend_surcharge_percent != null ? Number(data.weekend_surcharge_percent) : defaults.weekendSurchargePercent,
-      weeklyDiscountEnabled: data.weekly_discount_enabled ?? defaults.weeklyDiscountEnabled,
-      weeklyDiscountPercent: data.weekly_discount_percent != null ? Number(data.weekly_discount_percent) : defaults.weeklyDiscountPercent,
-      monthlyDiscountEnabled: data.monthly_discount_enabled ?? defaults.monthlyDiscountEnabled,
-      monthlyDiscountPercent: data.monthly_discount_percent != null ? Number(data.monthly_discount_percent) : defaults.monthlyDiscountPercent,
-      minNightsHighSeasonEnabled: data.min_nights_high_season_enabled ?? defaults.minNightsHighSeasonEnabled,
-      minNightsHighSeason: data.min_nights_high_season != null ? Number(data.min_nights_high_season) : defaults.minNightsHighSeason,
-      petsAllowedEnabled: data.pets_allowed_enabled ?? defaults.petsAllowedEnabled,
-      petFeeAmount: data.pet_fee_amount != null ? Number(data.pet_fee_amount) : defaults.petFeeAmount,
-      depositRequiredEnabled: data.deposit_required_enabled ?? defaults.depositRequiredEnabled,
-      depositPercent: data.deposit_percent != null ? Number(data.deposit_percent) : defaults.depositPercent,
+      businessName: data?.business_name || defaults.businessName,
+      address: data?.address || defaults.address,
+      whatsapp: data?.whatsapp || defaults.whatsapp,
+      email: data?.email || defaults.email,
+      houseRules: data?.house_rules || defaults.houseRules,
+      basePrice: data?.base_price != null ? Number(data.base_price) : defaults.basePrice,
+      cleaningFee: data?.cleaning_fee != null ? Number(data.cleaning_fee) : defaults.cleaningFee,
+      taxPercent: data?.tax_percent != null ? Number(data?.tax_percent) : fallbackTax,
+      weekendSurchargePercent: data?.weekend_surcharge_percent != null ? Number(data.weekend_surcharge_percent) : defaults.weekendSurchargePercent,
+      weeklyDiscountEnabled: data?.weekly_discount_enabled ?? defaults.weeklyDiscountEnabled,
+      weeklyDiscountPercent: data?.weekly_discount_percent != null ? Number(data.weekly_discount_percent) : defaults.weeklyDiscountPercent,
+      monthlyDiscountEnabled: data?.monthly_discount_enabled ?? defaults.monthlyDiscountEnabled,
+      monthlyDiscountPercent: data?.monthly_discount_percent != null ? Number(data.monthly_discount_percent) : defaults.monthlyDiscountPercent,
+      minNightsHighSeasonEnabled: data?.min_nights_high_season_enabled ?? defaults.minNightsHighSeasonEnabled,
+      minNightsHighSeason: data?.min_nights_high_season != null ? Number(data.min_nights_high_season) : defaults.minNightsHighSeason,
+      petsAllowedEnabled: data?.pets_allowed_enabled ?? defaults.petsAllowedEnabled,
+      petFeeAmount: data?.pet_fee_amount != null ? Number(data.pet_fee_amount) : defaults.petFeeAmount,
+      depositRequiredEnabled: data?.deposit_required_enabled ?? defaults.depositRequiredEnabled,
+      depositPercent: data?.deposit_percent != null ? Number(data.deposit_percent) : defaults.depositPercent,
       ...dbCms,
       ...localEnt,
     };
+
+    try {
+      localStorage.setItem("cached_site_settings", JSON.stringify(result));
+    } catch {}
+
+    return result;
   },
   async update(settings: any) {
     if (settings.taxPercent !== undefined) {
