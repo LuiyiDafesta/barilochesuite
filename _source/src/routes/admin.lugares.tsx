@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Edit, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/admin/ui-bits";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,11 +33,12 @@ function Lugares() {
   const [items, setItems] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
+  const [editingPlace, setEditingPlace] = useState<Place | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Formulario Nuevo Lugar
+  // Formulario Lugar
   const [name, setName] = useState("");
-  const [category, setCategory] = useState("Excursión");
+  const [category, setCategory] = useState<any>("Excursión");
   const [distance, setDistance] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("");
@@ -61,7 +63,26 @@ function Lugares() {
     return () => window.removeEventListener("property_changed", handlePropChange);
   }, []);
 
-  const handleCreatePlace = async () => {
+  const handleOpenModal = (p?: Place) => {
+    if (p) {
+      setEditingPlace(p);
+      setName(p.name);
+      setCategory(p.category);
+      setDistance(p.distance);
+      setDescription(p.description);
+      setImage(p.image);
+    } else {
+      setEditingPlace(null);
+      setName("");
+      setCategory("Excursión");
+      setDistance("5 km · 10 min");
+      setDescription("");
+      setImage("");
+    }
+    setOpenModal(true);
+  };
+
+  const handleSavePlace = async () => {
     if (!name || !description) {
       toast.error("Por favor completa el nombre y la descripción.");
       return;
@@ -69,24 +90,38 @@ function Lugares() {
 
     try {
       setSubmitting(true);
-      const newPlace = await placeService.create({
-        name,
-        category,
-        distance: distance || "5 km · 10 min",
-        description,
-        image: image || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
-        visible: true,
-      });
+      if (editingPlace) {
+        const updated = await placeService.update(editingPlace.id, {
+          name,
+          category,
+          distance: distance || "5 km · 10 min",
+          description,
+          image: image || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+          visible: editingPlace.visible,
+        });
+        setItems((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        toast.success("Lugar cercano actualizado", { description: name });
+      } else {
+        const newPlace = await placeService.create({
+          name,
+          category,
+          distance: distance || "5 km · 10 min",
+          description,
+          image: image || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+          visible: true,
+        });
+        setItems((prev) => [...prev, newPlace]);
+        toast.success("Lugar cercano guardado", { description: name });
+      }
 
-      setItems((prev) => [...prev, newPlace]);
-      toast.success("Lugar cercano guardado en Supabase", { description: name });
       setOpenModal(false);
+      setEditingPlace(null);
       setName("");
       setDistance("");
       setDescription("");
       setImage("");
     } catch (e: any) {
-      toast.error(e.message || "Error al crear lugar");
+      toast.error(e.message || "Error al guardar lugar");
     } finally {
       setSubmitting(false);
     }
@@ -96,17 +131,18 @@ function Lugares() {
     try {
       await placeService.toggleVisibility(id, visible);
       setItems((prev) => prev.map((p) => (p.id === id ? { ...p, visible } : p)));
-      toast.success("Visibilidad de lugar actualizada en Supabase");
+      toast.success("Visibilidad de lugar actualizada");
     } catch (e) {
       toast.error("Error al actualizar visibilidad");
     }
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm("¿Estás seguro de eliminar este lugar cercano?")) return;
     try {
       await placeService.delete(id);
       setItems((prev) => prev.filter((p) => p.id !== id));
-      toast.success("Lugar eliminado de Supabase");
+      toast.success("Lugar eliminado correctamente");
     } catch (e) {
       toast.error("Error al eliminar lugar");
     }
@@ -116,9 +152,9 @@ function Lugares() {
     <div className="space-y-6">
       <PageHeader
         title="Lugares cercanos"
-        description="Puntos de interés sincronizados con Supabase DB."
+        description="Puntos de interés e itinerarios sugeridos para los huéspedes."
         actions={
-          <Button size="sm" className="rounded-full" onClick={() => setOpenModal(true)}>
+          <Button size="sm" className="rounded-full" onClick={() => handleOpenModal()}>
             <Plus className="mr-1.5 h-3.5 w-3.5" /> Agregar lugar
           </Button>
         }
@@ -149,27 +185,32 @@ function Lugares() {
               </div>
 
               <div className="flex items-center justify-between border-t border-border px-5 py-3 bg-muted/20">
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
                   <Switch
                     checked={p.visible}
                     onCheckedChange={(v) => handleToggle(p.id, v)}
                   />
                   Visible
                 </label>
-                <Button variant="ghost" size="icon" aria-label="Eliminar" onClick={() => handleDelete(p.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" aria-label="Editar" onClick={() => handleOpenModal(p)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" aria-label="Eliminar" onClick={() => handleDelete(p.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}
         </div>
       )}
 
-      {/* Modal Nuevo Lugar */}
+      {/* Modal Crear / Editar Lugar */}
       <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display">Nuevo Lugar Cercano</DialogTitle>
+            <DialogTitle className="font-display">{editingPlace ? "Editar Lugar Cercano" : "Nuevo Lugar Cercano"}</DialogTitle>
             <DialogDescription>
               Cargá una recomendación turística o punto de interés para mostrar a los huéspedes.
             </DialogDescription>
@@ -214,12 +255,12 @@ function Lugares() {
             </div>
 
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="image">URL de Imagen</Label>
-              <Input
-                id="image"
-                placeholder="https://..."
+              <ImageUploader
                 value={image}
-                onChange={(e) => setImage(e.target.value)}
+                onChange={setImage}
+                preset="photo"
+                label="Imagen / Foto del Lugar *"
+                description="Subí una foto directamente desde tu dispositivo o ingresá su enlace URL."
               />
             </div>
 
@@ -241,7 +282,7 @@ function Lugares() {
             <Button variant="ghost" onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleCreatePlace} disabled={submitting}>
+            <Button onClick={handleSavePlace} disabled={submitting}>
               {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
               Guardar Lugar
             </Button>
@@ -251,3 +292,4 @@ function Lugares() {
     </div>
   );
 }
+

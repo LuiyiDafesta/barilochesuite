@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Copy, Key, Loader2, Mail, MapPin, MessageCircle } from "lucide-react";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Copy, Key, Loader2, Mail, MapPin, MessageCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader, StatusBadge } from "@/components/admin/ui-bits";
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/admin/clientes/$id")({
 
 function FichaCliente() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const [client, setClient] = useState<any>(null);
   const [history, setHistory] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +46,18 @@ function FichaCliente() {
   useEffect(() => {
     loadData();
   }, [id]);
+
+  const handleDeleteClient = async () => {
+    if (!client) return;
+    if (!confirm(`¿Estás seguro de que querés eliminar al cliente "${client.firstName} ${client.lastName}"?`)) return;
+    try {
+      await clientService.delete(client.id);
+      toast.success("Cliente eliminado correctamente");
+      navigate({ to: "/admin/clientes" });
+    } catch (e) {
+      toast.error("Error al eliminar cliente");
+    }
+  };
 
   if (loading) {
     return (
@@ -77,11 +90,17 @@ function FichaCliente() {
         title={`${client.firstName} ${client.lastName}`}
         description={`${client.city || "Sin ciudad"}, ${client.country || "Argentina"} · Idioma: ${client.language}`}
         actions={
-          <Button size="sm" className="rounded-full" onClick={() => toast.success("Abriendo WhatsApp...")}>
-            <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> Contactar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" className="rounded-full" onClick={() => toast.success("Abriendo WhatsApp...")}>
+              <MessageCircle className="mr-1.5 h-3.5 w-3.5" /> Contactar
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={handleDeleteClient}>
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Eliminar
+            </Button>
+          </div>
         }
       />
+
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1.6fr]">
         <div className="space-y-4">

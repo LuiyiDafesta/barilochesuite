@@ -8,6 +8,8 @@ export interface PropertyItem {
   tagline: string;
   address: string;
   maxGuests: number;
+  bedrooms: number;
+  bathrooms: number;
   petsAllowed: boolean;
   isMain: boolean;
   active?: boolean;
@@ -27,6 +29,25 @@ const getInactivePropertyIds = (): string[] => {
   }
 };
 
+const getExtraPropertyMeta = (): Record<string, { bedrooms?: number; bathrooms?: number }> => {
+  try {
+    const raw = localStorage.getItem("property_extra_meta");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const setExtraPropertyMeta = (id: string, meta: { bedrooms?: number; bathrooms?: number }) => {
+  try {
+    const current = getExtraPropertyMeta();
+    current[id] = { ...current[id], ...meta };
+    localStorage.setItem("property_extra_meta", JSON.stringify(current));
+  } catch (e) {
+    console.error("Error al guardar meta de propiedad:", e);
+  }
+};
+
 const setPropertyActiveState = (id: string, active: boolean) => {
   const inactive = getInactivePropertyIds();
   let updated: string[];
@@ -42,6 +63,7 @@ const setPropertyActiveState = (id: string, active: boolean) => {
 export const propertyService = {
   async getAll(): Promise<PropertyItem[]> {
     const inactiveIds = getInactivePropertyIds();
+    const metaMap = getExtraPropertyMeta();
     const { data, error } = await supabase.from("properties").select("*").order("is_main", { ascending: false });
     if (error || !data || data.length === 0) {
       return [
@@ -50,7 +72,9 @@ export const propertyService = {
           name: "Casa Nahuel",
           tagline: "Vista panorámica al Lago Nahuel Huapi",
           address: "Av. Bustillo Km 6,400",
-          maxGuests: 4,
+          maxGuests: metaMap["p_nahuel"]?.bedrooms != null ? (metaMap["p_nahuel"] as any).maxGuests || 6 : 6,
+          bedrooms: metaMap["p_nahuel"]?.bedrooms ?? 3,
+          bathrooms: metaMap["p_nahuel"]?.bathrooms ?? 2,
           petsAllowed: false,
           isMain: true,
           active: !inactiveIds.includes("p_nahuel"),
@@ -65,7 +89,9 @@ export const propertyService = {
           name: "Loft Catedral",
           tagline: "A pasos del centro de esquí Cerro Catedral",
           address: "Villa Catedral, Base",
-          maxGuests: 2,
+          maxGuests: metaMap["p_catedral"]?.bedrooms != null ? (metaMap["p_catedral"] as any).maxGuests || 2 : 2,
+          bedrooms: metaMap["p_catedral"]?.bedrooms ?? 1,
+          bathrooms: metaMap["p_catedral"]?.bathrooms ?? 1,
           petsAllowed: true,
           isMain: false,
           active: !inactiveIds.includes("p_catedral"),
@@ -79,12 +105,15 @@ export const propertyService = {
     }
     return data.map((p) => {
       const isInactive = inactiveIds.includes(p.id) || p.active === false;
+      const meta = metaMap[p.id] || {};
       return {
         id: p.id,
         name: p.name,
         tagline: p.tagline || "",
         address: p.address || "",
         maxGuests: p.max_guests || 4,
+        bedrooms: p.bedrooms != null ? Number(p.bedrooms) : (meta.bedrooms ?? 3),
+        bathrooms: p.bathrooms != null ? Number(p.bathrooms) : (meta.bathrooms ?? 2),
         petsAllowed: !!p.pets_allowed,
         isMain: !!p.is_main,
         active: !isInactive,
@@ -103,6 +132,8 @@ export const propertyService = {
       tagline: prop.tagline || "",
       address: prop.address || "",
       max_guests: prop.maxGuests || 4,
+      bedrooms: prop.bedrooms || 3,
+      bathrooms: prop.bathrooms || 2,
       pets_allowed: prop.petsAllowed || false,
       is_main: prop.isMain || false,
       active: prop.active ?? true,
@@ -116,22 +147,28 @@ export const propertyService = {
     if (prop.active !== undefined) {
       setPropertyActiveState(payload.id, prop.active);
     }
+    setExtraPropertyMeta(payload.id, { bedrooms: payload.bedrooms, bathrooms: payload.bathrooms });
 
     let { data, error } = await supabase.from("properties").insert([payload]).select();
     if (error) {
       delete payload.active;
+      delete payload.bedrooms;
+      delete payload.bathrooms;
       const retry = await supabase.from("properties").insert([payload]).select();
       if (retry.error) throw retry.error;
       data = retry.data;
     }
     const p = data[0];
     const isInactive = getInactivePropertyIds().includes(p.id) || p.active === false;
+    const meta = getExtraPropertyMeta()[p.id] || {};
     return {
       id: p.id,
       name: p.name,
       tagline: p.tagline || "",
       address: p.address || "",
       maxGuests: p.max_guests || 4,
+      bedrooms: p.bedrooms != null ? Number(p.bedrooms) : (meta.bedrooms ?? (prop.bedrooms || 3)),
+      bathrooms: p.bathrooms != null ? Number(p.bathrooms) : (meta.bathrooms ?? (prop.bathrooms || 2)),
       petsAllowed: !!p.pets_allowed,
       isMain: !!p.is_main,
       active: !isInactive,
@@ -146,12 +183,17 @@ export const propertyService = {
     if (prop.active !== undefined) {
       setPropertyActiveState(id, prop.active);
     }
+    if (prop.bedrooms !== undefined || prop.bathrooms !== undefined) {
+      setExtraPropertyMeta(id, { bedrooms: prop.bedrooms, bathrooms: prop.bathrooms });
+    }
 
     const payload: any = {
       name: prop.name,
       tagline: prop.tagline,
       address: prop.address,
       max_guests: prop.maxGuests,
+      bedrooms: prop.bedrooms,
+      bathrooms: prop.bathrooms,
       pets_allowed: prop.petsAllowed,
       is_main: prop.isMain,
       active: prop.active,
@@ -164,22 +206,25 @@ export const propertyService = {
     Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
 
     let { data, error } = await supabase.from("properties").update(payload).eq("id", id).select();
-    if (error && payload.active !== undefined) {
+    if (error) {
       delete payload.active;
+      delete payload.bedrooms;
+      delete payload.bathrooms;
       const retry = await supabase.from("properties").update(payload).eq("id", id).select();
       if (retry.error) throw retry.error;
       data = retry.data;
-    } else if (error) {
-      throw error;
     }
     const p = data[0];
     const isInactive = getInactivePropertyIds().includes(id) || p.active === false;
+    const meta = getExtraPropertyMeta()[id] || {};
     return {
       id: p.id,
       name: p.name,
       tagline: p.tagline || "",
       address: p.address || "",
       maxGuests: p.max_guests || 4,
+      bedrooms: p.bedrooms != null ? Number(p.bedrooms) : (meta.bedrooms ?? (prop.bedrooms || 3)),
+      bathrooms: p.bathrooms != null ? Number(p.bathrooms) : (meta.bathrooms ?? (prop.bathrooms || 2)),
       petsAllowed: !!p.pets_allowed,
       isMain: !!p.is_main,
       active: !isInactive,
@@ -650,6 +695,43 @@ export const clientService = {
       totalSpent: Number(c.total_spent || 0),
       password: c.password || "Bariloche2026!",
     };
+  },
+  async update(id: string, client: any) {
+    const payload: any = {
+      first_name: client.firstName,
+      last_name: client.lastName,
+      email: client.email,
+      whatsapp: client.whatsapp,
+      city: client.city,
+      country: client.country,
+      language: client.language,
+      notes: client.notes,
+      stays: client.stays,
+      total_spent: client.totalSpent,
+      password: client.password,
+    };
+    Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
+    const { data, error } = await supabase.from("clients").update(payload).eq("id", id).select();
+    if (error) throw error;
+    const c = data[0];
+    return {
+      id: c.id,
+      firstName: c.first_name,
+      lastName: c.last_name,
+      email: c.email,
+      whatsapp: c.whatsapp || "",
+      city: c.city || "",
+      country: c.country || "",
+      language: c.language || "Español",
+      notes: c.notes || "",
+      stays: c.stays || 0,
+      totalSpent: Number(c.total_spent || 0),
+      password: c.password || "Bariloche2026!",
+    };
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from("clients").delete().eq("id", id);
+    if (error) throw error;
   }
 };
 
@@ -876,17 +958,41 @@ export const reviewService = {
     }));
   },
   async create(review: any) {
-    const todayIso = new Date().toISOString().split("T")[0];
+    const todayIso = review.date || new Date().toISOString().split("T")[0];
     const { data, error } = await supabase.from("reviews").insert([{
-      id: `r_${Date.now()}`,
+      id: review.id || `r_${Date.now()}`,
       property_id: review.propertyId || "p_nahuel",
       name: review.name,
       country: review.country || "Argentina",
       comment: review.comment,
       rating: review.rating || 5,
       date_str: todayIso,
-      visible: true,
+      visible: review.visible !== undefined ? review.visible : true,
     }]).select();
+    if (error) throw error;
+    const r = data[0];
+    return {
+      id: r.id,
+      propertyId: r.property_id || "p_nahuel",
+      name: r.name,
+      country: r.country,
+      comment: r.comment,
+      rating: Number(r.rating),
+      date: r.date_str,
+      visible: r.visible,
+    };
+  },
+  async update(id: string, review: any) {
+    const payload: any = {
+      name: review.name,
+      country: review.country,
+      comment: review.comment,
+      rating: review.rating,
+      date_str: review.date,
+      visible: review.visible,
+    };
+    Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
+    const { data, error } = await supabase.from("reviews").update(payload).eq("id", id).select();
     if (error) throw error;
     const r = data[0];
     return {
@@ -902,6 +1008,10 @@ export const reviewService = {
   },
   async toggleVisibility(id: string, visible: boolean) {
     const { error } = await supabase.from("reviews").update({ visible }).eq("id", id);
+    if (error) throw error;
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from("reviews").delete().eq("id", id);
     if (error) throw error;
   }
 };
@@ -937,6 +1047,30 @@ export const placeService = {
       image: place.image || "",
       visible: place.visible !== undefined ? place.visible : true,
     }]).select();
+    if (error) throw error;
+    const p = data[0];
+    return {
+      id: p.id,
+      propertyId: p.property_id || "p_nahuel",
+      name: p.name,
+      category: p.category,
+      distance: p.distance,
+      description: p.description,
+      image: p.image || "",
+      visible: p.visible,
+    };
+  },
+  async update(id: string, place: any) {
+    const payload: any = {
+      name: place.name,
+      category: place.category,
+      distance: place.distance,
+      description: place.description,
+      image: place.image,
+      visible: place.visible,
+    };
+    Object.keys(payload).forEach((k) => payload[k] === undefined && delete payload[k]);
+    const { data, error } = await supabase.from("places").update(payload).eq("id", id).select();
     if (error) throw error;
     const p = data[0];
     return {

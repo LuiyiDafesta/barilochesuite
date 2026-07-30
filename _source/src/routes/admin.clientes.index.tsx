@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Loader2, Search, UserPlus } from "lucide-react";
+import { Loader2, Search, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/admin/ui-bits";
@@ -101,6 +101,17 @@ function Clientes() {
     }
   };
 
+  const handleDeleteClient = async (id: string, name: string) => {
+    if (!confirm(`¿Estás seguro de que querés eliminar al cliente "${name}"?`)) return;
+    try {
+      await clientService.delete(id);
+      setItems((prev) => prev.filter((c) => c.id !== id));
+      toast.success("Cliente eliminado correctamente");
+    } catch (e) {
+      toast.error("Error al eliminar cliente");
+    }
+  };
+
   const rows = useMemo(
     () =>
       items.filter((c) =>
@@ -113,7 +124,7 @@ function Clientes() {
     <div className="space-y-6">
       <PageHeader
         title="Clientes"
-        description={`${items.length} huéspedes en la base de datos de Supabase`}
+        description={`${items.length} huéspedes en la base de datos`}
         actions={
           <Button size="sm" className="rounded-full" onClick={() => setOpenModal(true)}>
             <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Nuevo cliente
@@ -147,7 +158,7 @@ function Clientes() {
                     <TableHead>Origen</TableHead>
                     <TableHead className="text-center">Estadías</TableHead>
                     <TableHead className="text-right">Total gastado</TableHead>
-                    <TableHead className="w-24" />
+                    <TableHead className="w-32 text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -178,12 +189,22 @@ function Clientes() {
                       </TableCell>
                       <TableCell className="text-center">{c.stays}</TableCell>
                       <TableCell className="whitespace-nowrap text-right">{formatARS(c.totalSpent)}</TableCell>
-                      <TableCell>
-                        <Button asChild variant="ghost" size="sm" className="rounded-full">
-                          <Link to="/admin/clientes/$id" params={{ id: c.id }}>
-                            Ver ficha
-                          </Link>
-                        </Button>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button asChild variant="ghost" size="sm" className="rounded-full">
+                            <Link to="/admin/clientes/$id" params={{ id: c.id }}>
+                              Ver ficha
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteClient(c.id, `${c.firstName} ${c.lastName}`)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -193,6 +214,7 @@ function Clientes() {
           )}
         </CardContent>
       </Card>
+
 
       {/* Modal Nuevo Cliente */}
       <Dialog open={openModal} onOpenChange={setOpenModal}>

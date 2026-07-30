@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { heroContent as defaultHero, images, places, property } from "@/data/site";
 import { getCurrentLanguage, Language, translations } from "@/lib/i18n";
-import { settingService } from "@/lib/services";
+import { PropertyItem, propertyService, settingService } from "@/lib/services";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -64,6 +64,7 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const [currentLang, setCurrentLang] = useState<Language>(getCurrentLanguage());
+  const [mainProp, setMainProp] = useState<PropertyItem | null>(null);
   const [hero, setHero] = useState({
     eyebrow: defaultHero.eyebrow,
     title: defaultHero.title,
@@ -77,7 +78,15 @@ function Home() {
 
     const loadHero = async () => {
       try {
-        const s = await settingService.get();
+        const [s, propsData] = await Promise.all([
+          settingService.get(),
+          propertyService.getAll(),
+        ]);
+        const activeMain = propsData.find((p) => p.isMain && p.active !== false) || propsData[0];
+        if (activeMain) {
+          setMainProp(activeMain);
+        }
+
         const eyebrow = (currentLang === "en" && s.heroEyebrow_en) || (currentLang === "pt" && s.heroEyebrow_pt) || s.heroEyebrow || defaultHero.eyebrow;
         const title = (currentLang === "en" && s.heroTitle_en) || (currentLang === "pt" && s.heroTitle_pt) || s.heroTitle || defaultHero.title;
         const subtitle = (currentLang === "en" && s.heroSubtitle_en) || (currentLang === "pt" && s.heroSubtitle_pt) || s.heroSubtitle || defaultHero.subtitle;
@@ -150,7 +159,7 @@ function Home() {
               <MapPin className="h-4 w-4" /> {property.city}, {property.region}
             </span>
             <span>
-              {property.guests} {tHero.guests} · {property.bedrooms} {tHero.bedrooms} · {property.bathrooms} {tHero.bathrooms}
+              {mainProp?.maxGuests ?? property.guests} {tHero.guests} · {mainProp?.bedrooms ?? property.bedrooms} {tHero.bedrooms} · {mainProp?.bathrooms ?? property.bathrooms} {tHero.bathrooms}
             </span>
           </div>
 

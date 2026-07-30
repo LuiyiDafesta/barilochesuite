@@ -191,7 +191,9 @@ function Configuracion() {
         name: "",
         tagline: "",
         address: "",
-        maxGuests: 4,
+        maxGuests: 6,
+        bedrooms: 3,
+        bathrooms: 2,
         petsAllowed: false,
         isMain: properties.length === 0,
         active: true,
@@ -551,6 +553,7 @@ function Configuracion() {
                         <Separator />
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div><span className="text-muted-foreground">Capacidad:</span> <span className="font-medium">{p.maxGuests} personas</span></div>
+                          <div><span className="text-muted-foreground">Distribución:</span> <span className="font-medium">{p.bedrooms || 3} habs · {p.bathrooms || 2} baños</span></div>
                           <div><span className="text-muted-foreground">Mascotas:</span> <span className="font-medium">{p.petsAllowed ? "Sí permite 🐾" : "No"}</span></div>
                           <div><span className="text-muted-foreground">Precio base:</span> <span className="font-semibold text-teal">{formatARS(p.basePrice)}</span></div>
                         </div>
@@ -599,8 +602,18 @@ function Configuracion() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pMaxGuests">Capacidad Máxima (huéspedes)</Label>
-                  <Input id="pMaxGuests" type="number" min={1} value={editingProp?.maxGuests || 4} onChange={(e) => setEditingProp((prev) => ({ ...prev, maxGuests: Number(e.target.value) }))} />
+                  <Label htmlFor="pMaxGuests">Capacidad (Huéspedes)</Label>
+                  <Input id="pMaxGuests" type="number" min={1} value={editingProp?.maxGuests || 6} onChange={(e) => setEditingProp((prev) => ({ ...prev, maxGuests: Number(e.target.value) }))} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pBedrooms">Habitaciones / Dormitorios</Label>
+                  <Input id="pBedrooms" type="number" min={1} value={editingProp?.bedrooms ?? 3} onChange={(e) => setEditingProp((prev) => ({ ...prev, bedrooms: Number(e.target.value) }))} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pBathrooms">Baños completos</Label>
+                  <Input id="pBathrooms" type="number" min={1} value={editingProp?.bathrooms ?? 2} onChange={(e) => setEditingProp((prev) => ({ ...prev, bathrooms: Number(e.target.value) }))} />
                 </div>
 
                 <div className="space-y-2">
