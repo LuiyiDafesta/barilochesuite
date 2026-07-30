@@ -24,7 +24,7 @@ export function GalleryExplorer({
   propertyId?: string;
 }) {
   const [filter, setFilter] = useState<string>("todas");
-  const [selectedPropertyFilter, setSelectedPropertyFilter] = useState<string>(propertyId || "todas");
+  const [selectedPropertyFilter, setSelectedPropertyFilter] = useState<string>(propertyId || "");
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [view, setView] = useState<"grid" | "masonry">("masonry");
   const [index, setIndex] = useState<number | null>(null);
@@ -37,7 +37,14 @@ export function GalleryExplorer({
         const props = await propertyService.getAll();
         const activeProps = props.filter((p) => p.active !== false);
         setProperties(activeProps);
-        const data = await galleryService.getAll(propertyId || selectedPropertyFilter);
+
+        let targetPropId = propertyId || selectedPropertyFilter;
+        if (!targetPropId || targetPropId === "todas") {
+          targetPropId = activeProps[0]?.id || "p_nahuel";
+          setSelectedPropertyFilter(targetPropId);
+        }
+
+        const data = await galleryService.getAll(targetPropId);
         setGalleryItems(data as any);
       } catch (e) {
         console.error("Error cargando galería pública:", e);
@@ -81,19 +88,8 @@ export function GalleryExplorer({
 
   return (
     <div className="space-y-6">
-      {!propertyId && properties.length > 0 && (
+      {!propertyId && properties.length > 1 && (
         <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-border/60">
-          <button
-            onClick={() => setSelectedPropertyFilter("todas")}
-            className={cn(
-              "rounded-xl px-4 py-2 text-xs font-semibold transition-all shrink-0",
-              selectedPropertyFilter === "todas"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground"
-            )}
-          >
-            Todas las Propiedades
-          </button>
           {properties.map((p) => (
             <button
               key={p.id}
