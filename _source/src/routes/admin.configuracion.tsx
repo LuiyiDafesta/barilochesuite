@@ -232,11 +232,7 @@ function Configuracion() {
   };
 
   const handleDeleteProperty = async (id: string) => {
-    if (properties.length <= 1) {
-      toast.error("No podés eliminar la única propiedad del sistema.");
-      return;
-    }
-    if (!confirm("¿Estás seguro de que querés eliminar esta propiedad?")) return;
+    if (!confirm("¿Estás seguro de que querés eliminar esta propiedad del sistema?")) return;
 
     try {
       setSubmitting(true);
@@ -543,11 +539,9 @@ function Configuracion() {
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenModal(p)}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            {properties.length > 1 && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteProperty(p.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" title="Eliminar propiedad" onClick={() => handleDeleteProperty(p.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
                         <Separator />

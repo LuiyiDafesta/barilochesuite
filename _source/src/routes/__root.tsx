@@ -128,6 +128,13 @@ function applyDynamicSEO(s: any) {
     keyEl.content = s.keywords;
   }
 
+  if (s.ogImage) {
+    let ogImg = document.getElementById("og-image") as HTMLMetaElement;
+    if (ogImg) ogImg.content = s.ogImage;
+    let twImg = document.getElementById("twitter-image") as HTMLMetaElement;
+    if (twImg) twImg.content = s.ogImage;
+  }
+
   if (s.faviconUrl) {
     let favEl = document.getElementById("dynamic-favicon") as HTMLLinkElement;
     if (!favEl) {
