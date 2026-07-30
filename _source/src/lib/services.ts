@@ -335,7 +335,7 @@ export const settingService = {
       logoUrl: "",
       primaryColor: "215 45% 20%",
       accentColor: "174 62% 47%",
-      enabledLanguages: ["es"], // ["es", "en", "pt"]
+      enabledLanguages: ["es"],
 
       // CMS Hero
       heroEyebrow: "BARILOCHE · PATAGONIA ARGENTINA",
@@ -391,8 +391,10 @@ export const settingService = {
       webhookReservationCancelled: "",
     };
 
+    const dbCms = data?.cms_data && typeof data.cms_data === "object" ? data.cms_data : {};
+
     if (error || !data) {
-      return { ...defaults, ...localEnt };
+      return { ...defaults, ...dbCms, ...localEnt };
     }
 
     return {
@@ -416,6 +418,7 @@ export const settingService = {
       petFeeAmount: data.pet_fee_amount != null ? Number(data.pet_fee_amount) : defaults.petFeeAmount,
       depositRequiredEnabled: data.deposit_required_enabled ?? defaults.depositRequiredEnabled,
       depositPercent: data.deposit_percent != null ? Number(data.deposit_percent) : defaults.depositPercent,
+      ...dbCms,
       ...localEnt,
     };
   },
@@ -425,6 +428,33 @@ export const settingService = {
     }
 
     saveLocalEnterpriseSettings(settings);
+
+    // Obtener cms_data actual o inicializar
+    const current = await this.get();
+    const cmsData = {
+      heroBgImage: settings.heroBgImage ?? current.heroBgImage,
+      heroEyebrow: settings.heroEyebrow ?? current.heroEyebrow,
+      heroTitle: settings.heroTitle ?? current.heroTitle,
+      heroSubtitle: settings.heroSubtitle ?? current.heroSubtitle,
+      heroEyebrow_en: settings.heroEyebrow_en ?? current.heroEyebrow_en,
+      heroTitle_en: settings.heroTitle_en ?? current.heroTitle_en,
+      heroSubtitle_en: settings.heroSubtitle_en ?? current.heroSubtitle_en,
+      heroEyebrow_pt: settings.heroEyebrow_pt ?? current.heroEyebrow_pt,
+      heroTitle_pt: settings.heroTitle_pt ?? current.heroTitle_pt,
+      heroSubtitle_pt: settings.heroSubtitle_pt ?? current.heroSubtitle_pt,
+      logoUrl: settings.logoUrl ?? current.logoUrl,
+      experienceTitle: settings.experienceTitle ?? current.experienceTitle,
+      experienceDescription: settings.experienceDescription ?? current.experienceDescription,
+      experienceBlocks: settings.experienceBlocks ?? current.experienceBlocks,
+      amenities: settings.amenities ?? current.amenities,
+      footerDescription: settings.footerDescription ?? current.footerDescription,
+      copyrightText: settings.copyrightText ?? current.copyrightText,
+      instagramUrl: settings.instagramUrl ?? current.instagramUrl,
+      facebookUrl: settings.facebookUrl ?? current.facebookUrl,
+      enabledLanguages: settings.enabledLanguages ?? current.enabledLanguages,
+      primaryColor: settings.primaryColor ?? current.primaryColor,
+      accentColor: settings.accentColor ?? current.accentColor,
+    };
 
     const payload: any = {
       id: "default",
@@ -446,6 +476,7 @@ export const settingService = {
       pet_fee_amount: settings.petFeeAmount,
       deposit_required_enabled: settings.depositRequiredEnabled,
       deposit_percent: settings.depositPercent,
+      cms_data: cmsData,
       updated_at: new Date().toISOString(),
     };
 

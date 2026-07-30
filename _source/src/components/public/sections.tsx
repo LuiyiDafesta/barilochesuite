@@ -145,34 +145,48 @@ export function AmenitiesGrid() {
 }
 
 export function Testimonials() {
+  const [items, setItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadReviews = async () => {
+      try {
+        const data = await reviewService.getAll();
+        setItems(data.filter((r: any) => r.visible));
+      } catch (e) {
+        console.error("Error al cargar testimonios:", e);
+      }
+    };
+    loadReviews();
+  }, []);
+
+  const displayReviews = items.length > 0 ? items : reviews.filter((r) => r.visible);
+
   return (
     <Carousel opts={{ align: "start", loop: true }} className="mt-12">
       <CarouselContent className="-ml-4">
-        {reviews
-          .filter((r) => r.visible)
-          .map((r) => (
-            <CarouselItem key={r.id} className="pl-4 sm:basis-1/2 lg:basis-1/3">
-              <Card className="h-full border-border/70 shadow-soft">
-                <CardContent className="flex h-full flex-col p-7">
-                  <Quote className="h-6 w-6 text-teal" />
-                  <p className="mt-4 flex-1 text-sm leading-relaxed text-foreground/85">"{r.comment}"</p>
-                  <div className="mt-6 flex items-center gap-3 border-t border-border pt-5">
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent font-display text-sm font-semibold text-accent-foreground">
-                      {r.name.split(" ").map((n) => n[0]).join("")}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate font-display text-sm font-semibold">{r.name}</p>
-                      <p className="text-xs text-muted-foreground">{r.country}</p>
-                    </div>
-                    <span className="ml-auto flex shrink-0 items-center gap-1 text-sm">
-                      <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                      {r.rating.toFixed(1)}
-                    </span>
+        {displayReviews.map((r) => (
+          <CarouselItem key={r.id} className="pl-4 sm:basis-1/2 lg:basis-1/3">
+            <Card className="h-full border-border/70 shadow-soft">
+              <CardContent className="flex h-full flex-col p-7">
+                <Quote className="h-6 w-6 text-teal" />
+                <p className="mt-4 flex-1 text-sm leading-relaxed text-foreground/85">"{r.comment}"</p>
+                <div className="mt-6 flex items-center gap-3 border-t border-border pt-5">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent font-display text-sm font-semibold text-accent-foreground">
+                    {r.name ? r.name.split(" ").map((n: string) => n[0]).join("") : "H"}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate font-display text-sm font-semibold">{r.name}</p>
+                    <p className="text-xs text-muted-foreground">{r.country}</p>
                   </div>
-                </CardContent>
-              </Card>
-            </CarouselItem>
-          ))}
+                  <span className="ml-auto flex shrink-0 items-center gap-1 text-sm font-medium">
+                    <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                    {Number(r.rating || 5).toFixed(1)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </CarouselItem>
+        ))}
       </CarouselContent>
       <div className="mt-8 flex justify-center gap-3">
         <CarouselPrevious className="static translate-y-0" />
