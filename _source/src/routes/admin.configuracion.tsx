@@ -11,6 +11,7 @@ import {
   Plus,
   Save,
   Search,
+  Trash2,
   Webhook,
   Wifi,
 } from "lucide-react";
@@ -184,7 +185,7 @@ function Configuracion() {
 
   const handleOpenModal = (p?: PropertyItem) => {
     if (p) {
-      setEditingProp(p);
+      setEditingProp({ ...p });
     } else {
       setEditingProp({
         name: "",
@@ -197,7 +198,7 @@ function Configuracion() {
         wifiNetwork: "",
         wifiPassword: "",
         lockCode: "",
-        checkInInfo: "Check-in a partir de las 15:00 hs",
+        checkInInfo: "Check-in a partir de las 15:00 hs con clave digital",
         basePrice: 185000,
       });
     }
@@ -212,17 +213,37 @@ function Configuracion() {
     try {
       setSubmitting(true);
       if (editingProp.id) {
-        const updated = await propertyService.update(editingProp.id, editingProp);
+        const updated = await propertyService.update(editingProp.id, editingProp as PropertyItem);
         setProperties((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
         toast.success("Propiedad actualizada");
       } else {
-        const created = await propertyService.create(editingProp);
+        const created = await propertyService.create(editingProp as PropertyItem);
         setProperties((prev) => [...prev, created]);
         toast.success("Nueva propiedad registrada");
       }
       setEditingProp(null);
     } catch (e: any) {
       toast.error("Error al guardar propiedad");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteProperty = async (id: string) => {
+    if (properties.length <= 1) {
+      toast.error("No podés eliminar la única propiedad del sistema.");
+      return;
+    }
+    if (!confirm("¿Estás seguro de que querés eliminar esta propiedad?")) return;
+
+    try {
+      setSubmitting(true);
+      await propertyService.delete(id);
+      setProperties((prev) => prev.filter((p) => p.id !== id));
+      toast.success("Propiedad eliminada correctamente.");
+      setEditingProp(null);
+    } catch (e: any) {
+      toast.error("Error al eliminar la propiedad");
     } finally {
       setSubmitting(false);
     }
@@ -252,7 +273,6 @@ function Configuracion() {
           <TabsTrigger value="propiedades">Propiedades</TabsTrigger>
         </TabsList>
 
-        {/* Tab General */}
         <TabsContent value="general" className="mt-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader>
@@ -291,7 +311,6 @@ function Configuracion() {
           </Card>
         </TabsContent>
 
-        {/* Tab Branding */}
         <TabsContent value="branding" className="mt-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader>
@@ -321,7 +340,6 @@ function Configuracion() {
           </Card>
         </TabsContent>
 
-        {/* Tab Idiomas */}
         <TabsContent value="idiomas" className="mt-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader>
@@ -368,7 +386,6 @@ function Configuracion() {
           </Card>
         </TabsContent>
 
-        {/* Tab Webhooks CRM */}
         <TabsContent value="webhooks" className="mt-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader>
@@ -401,7 +418,6 @@ function Configuracion() {
           </Card>
         </TabsContent>
 
-        {/* Tab Tracking & Analytics */}
         <TabsContent value="analytics" className="mt-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader>
@@ -430,7 +446,6 @@ function Configuracion() {
           </Card>
         </TabsContent>
 
-        {/* Tab SEO & Geo */}
         <TabsContent value="seo" className="mt-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader>
@@ -485,7 +500,6 @@ function Configuracion() {
           </Card>
         </TabsContent>
 
-        {/* Tab Propiedades */}
         <TabsContent value="propiedades" className="mt-6 space-y-6">
           <Card className="border-border/70 shadow-soft">
             <CardHeader className="flex flex-row items-center justify-between">
@@ -507,33 +521,52 @@ function Configuracion() {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
                   {properties.map((p) => (
-                    <div key={p.id} className="rounded-2xl border border-border bg-card p-5 space-y-4 shadow-soft">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-display text-base font-semibold">{p.name}</p>
-                            {p.isMain && <Badge className="bg-teal text-teal-foreground text-[10px]">Principal</Badge>}
-                            {p.active === false ? (
-                              <Badge variant="outline" className="border-warning/50 text-warning text-[10px]">Pausada (Standby)</Badge>
-                            ) : (
-                              <Badge className="bg-success text-success-foreground text-[10px]">Publicada</Badge>
+                    <div key={p.id} className="rounded-2xl border border-border bg-card p-5 space-y-4 shadow-soft flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-display text-base font-semibold">{p.name}</p>
+                              {p.isMain && <Badge className="bg-teal text-teal-foreground text-[10px]">Principal</Badge>}
+                              {p.active === false ? (
+                                <Badge variant="outline" className="border-warning/50 text-warning text-[10px]">Pausada (Standby)</Badge>
+                              ) : (
+                                <Badge className="bg-success text-success-foreground text-[10px]">Publicada</Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">{p.address}</p>
+                            {p.tagline && <p className="text-xs text-muted-foreground/80 italic mt-0.5">{p.tagline}</p>}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenModal(p)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            {properties.length > 1 && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteProperty(p.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground">{p.address}</p>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenModal(p)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <Separator />
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div><span className="text-muted-foreground">Capacidad:</span> <span className="font-medium">{p.maxGuests} personas</span></div>
+                          <div><span className="text-muted-foreground">Mascotas:</span> <span className="font-medium">{p.petsAllowed ? "Sí permite 🐾" : "No"}</span></div>
+                          <div><span className="text-muted-foreground">Precio base:</span> <span className="font-semibold text-teal">{formatARS(p.basePrice)}</span></div>
+                        </div>
                       </div>
-                      <Separator />
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div><span className="text-muted-foreground">Capacidad:</span> <span className="font-medium">{p.maxGuests} personas</span></div>
-                        <div><span className="text-muted-foreground">Mascotas:</span> <span className="font-medium">{p.petsAllowed ? "Sí permite 🐾" : "No"}</span></div>
-                        <div><span className="text-muted-foreground">Precio base:</span> <span className="font-semibold text-teal">{formatARS(p.basePrice)}</span></div>
-                      </div>
-                      <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-1 text-xs">
-                        <p className="flex items-center gap-1.5 font-medium text-foreground"><Wifi className="h-3.5 w-3.5 text-teal" /> WiFi: {p.wifiNetwork || "Sin definir"}</p>
-                        <p className="flex items-center gap-1.5 font-medium text-foreground"><KeyRound className="h-3.5 w-3.5 text-teal" /> Cerradura: {p.lockCode || "Sin definir"}</p>
+                      <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-1.5 text-xs mt-2">
+                        <p className="flex items-center gap-1.5 font-medium text-foreground">
+                          <Wifi className="h-3.5 w-3.5 text-teal shrink-0" /> Red WiFi: <span className="font-mono font-semibold">{p.wifiNetwork || "Sin definir"}</span> {p.wifiPassword ? <span className="text-muted-foreground text-[11px]">(Clave: {p.wifiPassword})</span> : null}
+                        </p>
+                        <p className="flex items-center gap-1.5 font-medium text-foreground">
+                          <KeyRound className="h-3.5 w-3.5 text-teal shrink-0" /> Cerradura: <span className="font-mono font-semibold">{p.lockCode || "Sin definir"}</span>
+                        </p>
+                        {p.checkInInfo && (
+                          <p className="text-[11px] text-muted-foreground pt-1.5 border-t border-border/40">
+                            ℹ️ {p.checkInInfo}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -542,9 +575,8 @@ function Configuracion() {
             </CardContent>
           </Card>
 
-          {/* Modal Crear / Editar Propiedad */}
           <Dialog open={editingProp !== null} onOpenChange={(o) => !o && setEditingProp(null)}>
-            <DialogContent className="sm:max-w-xl">
+            <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display">{editingProp?.id ? "Editar Propiedad" : "Nueva Propiedad"}</DialogTitle>
                 <DialogDescription>Configurá los datos operativos y credenciales para el huésped.</DialogDescription>
@@ -557,52 +589,98 @@ function Configuracion() {
                 </div>
 
                 <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="pTagline">Subtítulo / Bajada corta</Label>
+                  <Input id="pTagline" placeholder="ej: Vista panorámica al Lago Nahuel Huapi" value={editingProp?.tagline || ""} onChange={(e) => setEditingProp((prev) => ({ ...prev, tagline: e.target.value }))} />
+                </div>
+
+                <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="pAddress">Dirección o Ubicación *</Label>
                   <Input id="pAddress" placeholder="ej: Av. Bustillo Km 6,400" value={editingProp?.address || ""} onChange={(e) => setEditingProp((prev) => ({ ...prev, address: e.target.value }))} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pMaxGuests">Capacidad Máxima</Label>
+                  <Label htmlFor="pMaxGuests">Capacidad Máxima (huéspedes)</Label>
                   <Input id="pMaxGuests" type="number" min={1} value={editingProp?.maxGuests || 4} onChange={(e) => setEditingProp((prev) => ({ ...prev, maxGuests: Number(e.target.value) }))} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pBasePrice">Precio Base (ARS)</Label>
+                  <Label htmlFor="pBasePrice">Precio Base Noche (ARS)</Label>
                   <Input id="pBasePrice" type="number" value={editingProp?.basePrice || 185000} onChange={(e) => setEditingProp((prev) => ({ ...prev, basePrice: Number(e.target.value) }))} />
                 </div>
 
-                <div className="flex items-center justify-between rounded-xl border border-border p-3 sm:col-span-2 bg-muted/20">
-                  <div>
-                    <p className="text-xs font-semibold">¿Publicada y Activa en la Web?</p>
-                    <p className="text-[11px] text-muted-foreground">Si se desactiva, la propiedad queda en Standby y se oculta de toda la web pública.</p>
+                <div className="sm:col-span-2 pt-2 border-t border-border/60 space-y-3">
+                  <p className="text-xs font-semibold text-teal flex items-center gap-1.5">
+                    <KeyRound className="h-3.5 w-3.5" /> Datos Extra & Credenciales de Acceso
+                  </p>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="pWifiNet" className="text-xs">Nombre de Red WiFi (SSID)</Label>
+                      <Input id="pWifiNet" placeholder="ej: Catedral_Guest" value={editingProp?.wifiNetwork || ""} onChange={(e) => setEditingProp((prev) => ({ ...prev, wifiNetwork: e.target.value }))} />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pWifiPass" className="text-xs">Contraseña de WiFi</Label>
+                      <Input id="pWifiPass" placeholder="ej: Nieve2026" value={editingProp?.wifiPassword || ""} onChange={(e) => setEditingProp((prev) => ({ ...prev, wifiPassword: e.target.value }))} />
+                    </div>
+
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="pLockCode" className="text-xs">Código de Cerradura Digital / Alarma</Label>
+                      <Input id="pLockCode" placeholder="ej: 1192#" value={editingProp?.lockCode || ""} onChange={(e) => setEditingProp((prev) => ({ ...prev, lockCode: e.target.value }))} />
+                    </div>
+
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="pCheckInInfo" className="text-xs">Instrucciones de Check-in para el Huésped</Label>
+                      <Textarea id="pCheckInInfo" rows={2} placeholder="ej: Check-in a partir de las 15:00 hs con clave digital en la puerta." value={editingProp?.checkInInfo || ""} onChange={(e) => setEditingProp((prev) => ({ ...prev, checkInInfo: e.target.value }))} />
+                    </div>
                   </div>
-                  <Switch checked={editingProp?.active !== false} onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, active: val }))} />
                 </div>
 
-                <div className="flex items-center justify-between rounded-xl border border-border p-3 sm:col-span-2">
-                  <div>
-                    <p className="text-xs font-semibold">¿Admite Mascotas?</p>
-                    <p className="text-[11px] text-muted-foreground">Muestra icono de pet-friendly al huésped.</p>
-                  </div>
-                  <Switch checked={editingProp?.petsAllowed || false} onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, petsAllowed: val }))} />
-                </div>
+                <div className="sm:col-span-2 pt-2 border-t border-border/60 space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground">Opciones y Visibilidad</p>
 
-                <div className="flex items-center justify-between rounded-xl border border-border p-3 sm:col-span-2">
-                  <div>
-                    <p className="text-xs font-semibold">¿Es Propiedad Principal?</p>
-                    <p className="text-[11px] text-muted-foreground">Se muestra por defecto en la portada de la web.</p>
+                  <div className="flex items-center justify-between rounded-xl border border-border p-3 bg-muted/20">
+                    <div>
+                      <p className="text-xs font-semibold">¿Publicada y Activa en la Web?</p>
+                      <p className="text-[11px] text-muted-foreground">Si se desactiva, la propiedad queda en Standby y se oculta de toda la web pública.</p>
+                    </div>
+                    <Switch checked={editingProp?.active !== false} onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, active: val }))} />
                   </div>
-                  <Switch checked={editingProp?.isMain || false} onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, isMain: val }))} />
+
+                  <div className="flex items-center justify-between rounded-xl border border-border p-3">
+                    <div>
+                      <p className="text-xs font-semibold">¿Admite Mascotas?</p>
+                      <p className="text-[11px] text-muted-foreground">Muestra icono de pet-friendly al huésped.</p>
+                    </div>
+                    <Switch checked={editingProp?.petsAllowed || false} onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, petsAllowed: val }))} />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-xl border border-border p-3">
+                    <div>
+                      <p className="text-xs font-semibold">¿Es Propiedad Principal?</p>
+                      <p className="text-[11px] text-muted-foreground">Se muestra por defecto en la portada de la web.</p>
+                    </div>
+                    <Switch checked={editingProp?.isMain || false} onCheckedChange={(val) => setEditingProp((prev) => ({ ...prev, isMain: val }))} />
+                  </div>
                 </div>
               </div>
 
               <Separator />
 
-              <DialogFooter>
-                <Button variant="ghost" onClick={() => setEditingProp(null)}>Cancelar</Button>
-                <Button onClick={handleSaveProperty} disabled={submitting}>
-                  {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />} Guardar Propiedad
-                </Button>
+              <DialogFooter className="flex flex-row items-center justify-between sm:justify-between">
+                <div>
+                  {editingProp?.id && properties.length > 1 && (
+                    <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteProperty(editingProp.id!)}>
+                      <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Eliminar
+                    </Button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" onClick={() => setEditingProp(null)}>Cancelar</Button>
+                  <Button onClick={handleSaveProperty} disabled={submitting}>
+                    {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />} Guardar Propiedad
+                  </Button>
+                </div>
               </DialogFooter>
             </DialogContent>
           </Dialog>
