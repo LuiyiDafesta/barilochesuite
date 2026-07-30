@@ -344,13 +344,9 @@ export const settingService = {
       heroBgImage: "",
 
       // CMS Experiencia
-      experienceTitle: "No es un departamento. Es una forma de vivir Bariloche.",
-      experienceDescription: "Cada ambiente fue pensado para que el paisaje sea el protagonista y vos sólo tengas que descansar.",
-      experienceBlocks: [
-        { id: "e1", title: "Vista & Luz", description: "Ventanales de piso a techo orientados al norte. El amanecer sobre el lago desde el sillón principal.", image: "/lake-view.jpg", badge: "Panorámica" },
-        { id: "e2", title: "Descanso & Silencio", description: "Sommiers de alta densidad, sábanas de 600 hilos y cortinas black-out motorizadas para un sueño reparador.", image: "/bedroom.jpg", badge: "Confort Premium" },
-        { id: "e3", title: "Gastronomía & Fuego", description: "Cocina equipada para gourmets y parrilla propia en la terraza para asados con vista a los picos nevados.", image: "/kitchen.jpg", badge: "Equipamiento" },
-      ],
+      experienceTitle: "La Experiencia",
+      experienceDescription: "",
+      experienceBlocks: [],
 
       // CMS Features / Amenities
       amenities: [

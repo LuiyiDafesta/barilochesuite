@@ -22,16 +22,16 @@ import { PropertyItem, propertyService, settingService } from "@/lib/services";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Casa Nahuel — Departamento boutique frente al lago en Bariloche" },
+      { title: "Duplex Turístico Bariloche — Hospedaje Boutique en Bariloche" },
       {
         name: "description",
         content:
-          "Alojate en un departamento de alta gama con vistas al Nahuel Huapi. Diseño cálido, tres habitaciones, parrilla y garage en San Carlos de Bariloche.",
+          "Alojate en un duplex exclusivo con vistas a la montaña y el confort de una estadía prémium en San Carlos de Bariloche.",
       },
-      { property: "og:title", content: "Casa Nahuel — Departamento boutique en Bariloche" },
+      { property: "og:title", content: "Duplex Turístico Bariloche" },
       {
         property: "og:description",
-        content: "Un refugio de montaña de alta gama frente al Nahuel Huapi, en San Carlos de Bariloche.",
+        content: "Un refugio de montaña de alta gama en San Carlos de Bariloche.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "/" },
@@ -73,22 +73,21 @@ function Home() {
   });
   const [hero, setHero] = useState(() => {
     try {
-      const cachedBg = localStorage.getItem("cached_hero_bg");
-      const raw = localStorage.getItem("enterprise_site_settings");
-      if (raw || cachedBg) {
-        const parsed = raw ? JSON.parse(raw) : {};
+      const cached = localStorage.getItem("cached_site_settings");
+      if (cached) {
+        const parsed = JSON.parse(cached);
         return {
-          eyebrow: parsed.heroEyebrow || defaultHero.eyebrow,
-          title: parsed.heroTitle || defaultHero.title,
-          subtitle: parsed.heroSubtitle || defaultHero.subtitle,
-          bgImage: cachedBg || parsed.heroBgImage || "",
+          eyebrow: parsed.heroEyebrow || "",
+          title: parsed.heroTitle || "",
+          subtitle: parsed.heroSubtitle || "",
+          bgImage: parsed.heroBgImage || "",
         };
       }
     } catch {}
     return {
-      eyebrow: defaultHero.eyebrow,
-      title: defaultHero.title,
-      subtitle: defaultHero.subtitle,
+      eyebrow: "",
+      title: "",
+      subtitle: "",
       bgImage: "",
     };
   });
@@ -111,9 +110,9 @@ function Home() {
           } catch {}
         }
 
-        const eyebrow = (currentLang === "en" && s.heroEyebrow_en) || (currentLang === "pt" && s.heroEyebrow_pt) || s.heroEyebrow || defaultHero.eyebrow;
-        const title = (currentLang === "en" && s.heroTitle_en) || (currentLang === "pt" && s.heroTitle_pt) || s.heroTitle || defaultHero.title;
-        const subtitle = (currentLang === "en" && s.heroSubtitle_en) || (currentLang === "pt" && s.heroSubtitle_pt) || s.heroSubtitle || defaultHero.subtitle;
+        const eyebrow = (currentLang === "en" && s.heroEyebrow_en) || (currentLang === "pt" && s.heroEyebrow_pt) || s.heroEyebrow || "";
+        const title = (currentLang === "en" && s.heroTitle_en) || (currentLang === "pt" && s.heroTitle_pt) || s.heroTitle || "";
+        const subtitle = (currentLang === "en" && s.heroSubtitle_en) || (currentLang === "pt" && s.heroSubtitle_pt) || s.heroSubtitle || "";
 
         const bgImage = s.heroBgImage || "";
         setHero({

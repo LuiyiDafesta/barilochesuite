@@ -47,7 +47,7 @@ export function ExperienceBlocks() {
         }
       }
     } catch {}
-    return experiences.map((exp) => ({ title: exp.title, description: exp.text, image: exp.image, badge: exp.tag }));
+    return [];
   });
   const [currentLang, setCurrentLang] = useState<Language>(getCurrentLanguage());
 
@@ -60,6 +60,8 @@ export function ExperienceBlocks() {
         const s = await settingService.get();
         if (s.experienceBlocks && s.experienceBlocks.length > 0) {
           setBlocks(s.experienceBlocks);
+        } else {
+          setBlocks([]);
         }
       } catch (e) {
         console.error("Error al cargar bloques de experiencia:", e);
@@ -68,6 +70,8 @@ export function ExperienceBlocks() {
     load();
     return () => window.removeEventListener("language_changed", onLangChange);
   }, []);
+
+  if (!blocks || blocks.length === 0) return null;
 
   return (
     <div className="space-y-24 md:space-y-32">
