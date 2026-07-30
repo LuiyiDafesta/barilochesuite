@@ -37,7 +37,18 @@ export function SectionHeading({
 }
 
 export function ExperienceBlocks() {
-  const [blocks, setBlocks] = useState<any[]>([]);
+  const [blocks, setBlocks] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem("cached_site_settings");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.experienceBlocks && parsed.experienceBlocks.length > 0) {
+          return parsed.experienceBlocks;
+        }
+      }
+    } catch {}
+    return experiences.map((exp) => ({ title: exp.title, description: exp.text, image: exp.image, badge: exp.tag }));
+  });
   const [currentLang, setCurrentLang] = useState<Language>(getCurrentLanguage());
 
   useEffect(() => {
@@ -49,8 +60,6 @@ export function ExperienceBlocks() {
         const s = await settingService.get();
         if (s.experienceBlocks && s.experienceBlocks.length > 0) {
           setBlocks(s.experienceBlocks);
-        } else {
-          setBlocks(experiences.map((exp) => ({ title: exp.title, description: exp.text, image: exp.image, badge: exp.tag })));
         }
       } catch (e) {
         console.error("Error al cargar bloques de experiencia:", e);
@@ -98,7 +107,18 @@ export function ExperienceBlocks() {
 }
 
 export function AmenitiesGrid() {
-  const [list, setList] = useState<any[]>([]);
+  const [list, setList] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem("cached_site_settings");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.amenities && parsed.amenities.length > 0) {
+          return parsed.amenities.filter((a: any) => a.visible !== false);
+        }
+      }
+    } catch {}
+    return amenities.map((a) => ({ title: a.label, description: a.detail, icon: a.icon }));
+  });
   const [currentLang, setCurrentLang] = useState<Language>(getCurrentLanguage());
 
   useEffect(() => {
@@ -110,8 +130,6 @@ export function AmenitiesGrid() {
         const s = await settingService.get();
         if (s.amenities && s.amenities.length > 0) {
           setList(s.amenities.filter((a: any) => a.visible !== false));
-        } else {
-          setList(amenities.map((a) => ({ title: a.label, description: a.detail, icon: a.icon })));
         }
       } catch (e) {
         console.error("Error al cargar características:", e);

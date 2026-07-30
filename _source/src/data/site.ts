@@ -43,31 +43,31 @@ export const property = {
 export const experiences = [
   {
     title: "Dormí con vistas increíbles",
-    text: "Ventanales de piso a techo enmarcan el Nahuel Huapi y los Andes nevados. Amanecés con el lago cambiando de color y te dormís con el silencio de la montaña.",
+    text: "Ventanales de piso a techo enmarcan el Nahuel Huapi y los Andes nevados. Amanecés con el paisaje cambiando de color y te dormís con el silencio de la montaña.",
     image: bedroom,
     tag: "Descanso",
   },
   {
     title: "Cociná como en casa",
-    text: "Cocina completa con isla de mármol, horno doble y todo lo necesario para largas sobremesas patagónicas con vino y cordero.",
+    text: "Cocina completa equipada con todo lo necesario para largas sobremesas patagónicas.",
     image: kitchen,
     tag: "Gastronomía",
   },
   {
     title: "Descansá en un ambiente cálido",
-    text: "Pisos de roble, hogar a leña, textiles naturales y calefacción central. La calidez de una casa de montaña con estándares de hotel.",
+    text: "Pisos de madera, textiles naturales y calefacción central. La calidez de un hospedaje de montaña con estándares prémium.",
     image: living,
     tag: "Living",
   },
   {
-    title: "Ideal para familias",
-    text: "Tres habitaciones, dos baños completos, espacios amplios y seguros. Hasta seis huéspedes con la comodidad de un hogar propio.",
+    title: "Confort y privacidad",
+    text: "Ambiente moderno, baño completo y espacios amplios y seguros. Hasta 4 huéspedes con la comodidad de un hogar propio.",
     image: bathroom,
-    tag: "Familias",
+    tag: "Confort",
   },
   {
     title: "Excelente ubicación",
-    text: "A ocho minutos del Centro Cívico y a veinte del Cerro Catedral, sobre el corredor de Bustillo, con acceso directo a playas y restaurantes.",
+    text: "Ubicado en Cerro Catedral, con rápido acceso al centro, centros de esquí, senderos y gastronomía de montaña.",
     image: terrace,
     tag: "Ubicación",
   },
@@ -76,20 +76,16 @@ export const experiences = [
 export type Amenity = { icon: string; label: string; detail: string };
 
 export const amenities: Amenity[] = [
-  { icon: "Users", label: "Huéspedes", detail: "Hasta 6 personas" },
-  { icon: "BedDouble", label: "Habitaciones", detail: "3 dormitorios" },
-  { icon: "Bath", label: "Baños", detail: "2 completos" },
-  { icon: "Wifi", label: "WiFi", detail: "Fibra 300 Mb" },
-  { icon: "Tv", label: "Smart TV", detail: "55'' + streaming" },
+  { icon: "Users", label: "Huéspedes", detail: "Hasta 4 personas" },
+  { icon: "BedDouble", label: "Habitaciones", detail: "1 dormitorio" },
+  { icon: "Bath", label: "Baños", detail: "1 completo" },
+  { icon: "Wifi", label: "WiFi", detail: "Fibra de alta velocidad" },
+  { icon: "Tv", label: "Smart TV", detail: "Streaming HD" },
   { icon: "ChefHat", label: "Cocina", detail: "Equipada completa" },
-  { icon: "Flame", label: "Calefacción", detail: "Central + hogar" },
-  { icon: "Beef", label: "Parrilla", detail: "Quincho privado" },
-  { icon: "Car", label: "Garage", detail: "Cubierto para 1 auto" },
-  { icon: "Mountain", label: "Vista", detail: "Lago y montaña" },
+  { icon: "Flame", label: "Calefacción", detail: "Central regulable" },
+  { icon: "Mountain", label: "Vista", detail: "Cerros y paisaje" },
   { icon: "LogIn", label: "Check In", detail: "Desde 15:00" },
-  { icon: "LogOut", label: "Check Out", detail: "Hasta 10:00" },
-  { icon: "PawPrint", label: "Mascotas", detail: "Bajo consulta" },
-  { icon: "Snowflake", label: "Guarda esquí", detail: "Con secado" },
+  { icon: "LogOut", label: "Check Out", detail: "Hasta 11:00" },
 ];
 
 export type GalleryCategory =
