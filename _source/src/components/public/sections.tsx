@@ -47,7 +47,11 @@ export function ExperienceBlocks() {
         }
       }
     } catch {}
-    return [];
+    return [
+      { id: "e1", title: "Vista Panorámica", description: "Ventanales amplios con luz natural y vistas espectaculares a la montaña.", image: "/lake-view.jpg", badge: "Panorámica" },
+      { id: "e2", title: "Descanso & Confort", description: "Sommier prémium y ropa de cama seleccionada para un descanso reparador.", image: "/bedroom.jpg", badge: "Confort Prémium" },
+      { id: "e3", title: "Equipamiento Completo", description: "Cocina totalmente equipada para disfrutar en familia.", image: "/kitchen.jpg", badge: "Equipamiento" },
+    ];
   });
   const [currentLang, setCurrentLang] = useState<Language>(getCurrentLanguage());
 
@@ -60,8 +64,6 @@ export function ExperienceBlocks() {
         const s = await settingService.get();
         if (s.experienceBlocks && s.experienceBlocks.length > 0) {
           setBlocks(s.experienceBlocks);
-        } else {
-          setBlocks([]);
         }
       } catch (e) {
         console.error("Error al cargar bloques de experiencia:", e);

@@ -344,9 +344,31 @@ export const settingService = {
       heroBgImage: "",
 
       // CMS Experiencia
-      experienceTitle: "La Experiencia",
-      experienceDescription: "",
-      experienceBlocks: [],
+      experienceTitle: "No es un departamento. Es una forma de vivir Bariloche.",
+      experienceDescription: "Cada ambiente fue pensado para que el paisaje sea el protagonista y vos sólo tengas que descansar.",
+      experienceBlocks: [
+        {
+          id: "e1",
+          title: "Vista Panorámica",
+          description: "Ventanales amplios con luz natural y vistas espectaculares a la montaña.",
+          image: "/lake-view.jpg",
+          badge: "Panorámica",
+        },
+        {
+          id: "e2",
+          title: "Descanso & Confort",
+          description: "Sommier prémium y ropa de cama seleccionada para un descanso reparador.",
+          image: "/bedroom.jpg",
+          badge: "Confort Prémium",
+        },
+        {
+          id: "e3",
+          title: "Equipamiento Completo",
+          description: "Cocina totalmente equipada para disfrutar en familia.",
+          image: "/kitchen.jpg",
+          badge: "Equipamiento",
+        },
+      ],
 
       // CMS Features / Amenities
       amenities: [
