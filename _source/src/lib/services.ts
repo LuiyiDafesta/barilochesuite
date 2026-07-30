@@ -393,6 +393,16 @@ export const settingService = {
 
     const dbCms = data?.cms_data && typeof data.cms_data === "object" ? data.cms_data : {};
 
+    // Auto-migración / Sincronización: si localEnt tiene datos guardados en este dispositivo y Supabase cms_data está incompleto o vacío,
+    // sincronizamos automáticamente hacia Supabase para que se refleje de inmediato en móviles y otros dispositivos.
+    if (Object.keys(localEnt).length > 0 && (!data?.cms_data || Object.keys(data.cms_data).length === 0)) {
+      setTimeout(() => {
+        this.update({ ...defaults, ...localEnt }).catch((err) =>
+          console.error("Error auto-sincronizando cms_data hacia Supabase:", err)
+        );
+      }, 300);
+    }
+
     if (error || !data) {
       return { ...defaults, ...dbCms, ...localEnt };
     }
