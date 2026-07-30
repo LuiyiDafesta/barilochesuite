@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
-import { CalendarDays, Home, MapPin, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { CalendarDays, Home, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -17,12 +17,6 @@ import { buildOccupancyMap, calculateEstimatedPrice, checkRangeOverlap, formatLo
 import { getCurrentLanguage, Language, translations } from "@/lib/i18n";
 import { blockService, PropertyItem, propertyService, rateService, reservationService, settingService } from "@/lib/services";
 
-// Leyenda Pública simplificada
-const legend = [
-  { label: "Disponible", className: "bg-background border border-border" },
-  { label: "No disponible (Ocupado)", className: "bg-primary/85 text-primary-foreground" },
-];
-
 export function BookingSection() {
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [selectedPropId, setSelectedPropId] = useState<string>("p_nahuel");
@@ -34,11 +28,20 @@ export function BookingSection() {
   const [blocks, setBlocks] = useState<Block[]>([]);
 
   const [currentLang, setCurrentLang] = useState<Language>(getCurrentLanguage());
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const onLangChange = (e: any) => setCurrentLang(e.detail);
     window.addEventListener("language_changed", onLangChange);
-    return () => window.removeEventListener("language_changed", onLangChange);
+
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => {
+      window.removeEventListener("language_changed", onLangChange);
+      window.removeEventListener("resize", checkMobile);
+    };
   }, []);
 
   const t = translations[currentLang]?.booking || translations.es.booking;
@@ -160,6 +163,72 @@ export function BookingSection() {
     });
   };
 
+  const renderPriceSummaryCard = () => (
+    <Card className="border-border/70 shadow-lift">
+      <CardContent className="p-5 sm:p-6">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="font-display text-2xl font-semibold">{formatARS(displayRatePerNight)}</p>
+          <span className="text-sm text-muted-foreground">{nights > 0 ? `/${t.nights}` : `/${t.nights}`}</span>
+        </div>
+        <p className="mt-1 text-xs text-teal font-medium">{activeProp.name}</p>
+
+        <Separator className="my-4 sm:my-5" />
+
+        {nights > 0 ? (
+          <div className="space-y-3 text-sm">
+            {priceCalc && priceCalc.breakdown.length > 0 ? (
+              priceCalc.breakdown.map((item: any, idx: number) => (
+                <Row
+                  key={idx}
+                  label={
+                    priceCalc.breakdown.length > 1
+                      ? `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? t.nights : t.nights} (${item.label})`
+                      : `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? t.nights : t.nights}`
+                  }
+                  value={formatARS(item.total)}
+                />
+              ))
+            ) : (
+              <Row label={`${formatARS(displayRatePerNight)} × ${nights} ${t.nights}`} value={formatARS(total)} />
+            )}
+            {priceCalc && priceCalc.discountAmount > 0 && (
+              <Row label={priceCalc.discountLabel} value={`-${formatARS(priceCalc.discountAmount)}`} />
+            )}
+            {cleaningFee > 0 && <Row label="Limpieza final" value={formatARS(cleaningFee)} />}
+            {taxes > 0 && <Row label={`Impuestos (${taxPercent}%)`} value={formatARS(taxes)} />}
+            <Separator className="my-4" />
+            <div className="flex items-center justify-between font-bold">
+              <span className="font-display text-base font-semibold">Total estimado</span>
+              <span className="font-display text-xl font-semibold text-teal">{formatARS(total)}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border px-4 py-6 text-center">
+            <CalendarDays className="mx-auto h-6 w-6 text-muted-foreground" />
+            <p className="mt-2 text-sm text-muted-foreground">
+              Elegí check-in y check-out en el calendario para calcular el precio de tu estadía.
+            </p>
+          </div>
+        )}
+
+        <Button className="mt-5 w-full rounded-full" size="lg" disabled={nights === 0} onClick={submit}>
+          {nights > 0 ? "Completar solicitud de reserva" : "Consultar disponibilidad"}
+        </Button>
+
+        <div className="mt-4 space-y-2 text-xs leading-relaxed text-muted-foreground">
+          <p className="flex gap-2">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal" />
+            No se cobra nada ahora. La reserva se confirma únicamente después de validar la disponibilidad real.
+          </p>
+          <p className="flex gap-2">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-teal" />
+            Recibimos reservas de Airbnb y Booking, por eso confirmamos cada fecha de forma manual.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-8">
       {/* Selector de Propiedad si hay 2 o más activas */}
@@ -195,35 +264,38 @@ export function BookingSection() {
         </div>
       )}
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-16">
-        <div>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-16">
+        <div className="space-y-8">
+          {/* Card Calendario */}
           <Card className="overflow-hidden border-border/70 shadow-soft">
             <CardContent className="p-4 sm:p-6">
               <div className="mb-4 grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-border bg-secondary/40 px-4 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{t.checkIn}</p>
-                  <p className="mt-1 truncate font-display text-sm font-semibold">{formatLong(range?.from)}</p>
+                <div className="rounded-xl border border-border bg-secondary/40 px-3 py-2.5 sm:px-4 sm:py-3">
+                  <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{t.checkIn}</p>
+                  <p className="mt-1 truncate font-display text-xs sm:text-sm font-semibold">{formatLong(range?.from)}</p>
                 </div>
-                <div className="rounded-xl border border-border bg-secondary/40 px-4 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{t.checkOut}</p>
-                  <p className="mt-1 truncate font-display text-sm font-semibold">{formatLong(range?.to)}</p>
+                <div className="rounded-xl border border-border bg-secondary/40 px-3 py-2.5 sm:px-4 sm:py-3">
+                  <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{t.checkOut}</p>
+                  <p className="mt-1 truncate font-display text-xs sm:text-sm font-semibold">{formatLong(range?.to)}</p>
                 </div>
               </div>
 
-              <Calendar
-                mode="range"
-                numberOfMonths={2}
-                selected={range}
-                onSelect={setRange}
-                disabled={isDayDisabled}
-                modifiers={{
-                  ocupada: allOccupiedDates,
-                }}
-                modifiersClassNames={{
-                  ocupada: "bg-primary/85 text-primary-foreground rounded-md font-medium opacity-85",
-                }}
-                className="w-full [--cell-size:2.4rem]"
-              />
+              <div className="flex justify-center overflow-x-auto">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={isMobile ? 1 : 2}
+                  selected={range}
+                  onSelect={setRange}
+                  disabled={isDayDisabled}
+                  modifiers={{
+                    ocupada: allOccupiedDates,
+                  }}
+                  modifiersClassNames={{
+                    ocupada: "bg-primary/85 text-primary-foreground rounded-md font-medium opacity-85",
+                  }}
+                  className="w-full justify-center"
+                />
+              </div>
 
               <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-4">
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -238,6 +310,12 @@ export function BookingSection() {
             </CardContent>
           </Card>
 
+          {/* En Móvil (< lg), mostramos la Card de Tarifa / Total INMEDIATAMENTE después del Calendario */}
+          <div className="block lg:hidden">
+            {renderPriceSummaryCard()}
+          </div>
+
+          {/* Formulario de Reserva / Consulta */}
           <form onSubmit={submit} className="mt-8">
             <h3 className="font-display text-xl font-semibold">{t.yourTrip}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -311,70 +389,9 @@ export function BookingSection() {
           </form>
         </div>
 
-        <div className="lg:sticky lg:top-28 lg:h-fit">
-          <Card className="border-border/70 shadow-lift">
-            <CardContent className="p-6">
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="font-display text-2xl font-semibold">{formatARS(displayRatePerNight)}</p>
-                <span className="text-sm text-muted-foreground">{nights > 0 ? `/${t.nights}` : `/${t.nights}`}</span>
-              </div>
-              <p className="mt-1 text-xs text-teal font-medium">{activeProp.name}</p>
-
-              <Separator className="my-5" />
-
-              {nights > 0 ? (
-                <div className="space-y-3 text-sm">
-                  {priceCalc && priceCalc.breakdown.length > 0 ? (
-                    priceCalc.breakdown.map((item, idx) => (
-                      <Row
-                        key={idx}
-                        label={
-                          priceCalc.breakdown.length > 1
-                            ? `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? t.nights : t.nights} (${item.label})`
-                            : `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? t.nights : t.nights}`
-                        }
-                        value={formatARS(item.total)}
-                      />
-                    ))
-                  ) : (
-                    <Row label={`${formatARS(displayRatePerNight)} × ${nights} ${t.nights}`} value={formatARS(total)} />
-                  )}
-                  {priceCalc && priceCalc.discountAmount > 0 && (
-                    <Row label={priceCalc.discountLabel} value={`-${formatARS(priceCalc.discountAmount)}`} />
-                  )}
-                  {cleaningFee > 0 && <Row label="Limpieza final" value={formatARS(cleaningFee)} />}
-                  {taxes > 0 && <Row label={`Impuestos (${taxPercent}%)`} value={formatARS(taxes)} />}
-                  <Separator className="my-4" />
-                  <div className="flex items-center justify-between">
-                    <span className="font-display text-base font-semibold">Total estimado</span>
-                    <span className="font-display text-xl font-semibold">{formatARS(total)}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center">
-                  <CalendarDays className="mx-auto h-6 w-6 text-muted-foreground" />
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Elegí tus fechas en el calendario para ver el precio estimado.
-                  </p>
-                </div>
-              )}
-
-              <Button className="mt-6 w-full rounded-full" size="lg" disabled={nights === 0} onClick={submit}>
-                Consultar disponibilidad
-              </Button>
-
-              <div className="mt-5 space-y-3 text-xs leading-relaxed text-muted-foreground">
-                <p className="flex gap-2">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal" />
-                  No se cobra nada ahora. La reserva se confirma únicamente después de validar la disponibilidad real.
-                </p>
-                <p className="flex gap-2">
-                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-teal" />
-                  También recibimos reservas de Airbnb y Booking, por eso confirmamos cada fecha de forma manual.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        {/* En Desktop (>= lg), mostramos la Card en la columna derecha sticky */}
+        <div className="hidden lg:block lg:sticky lg:top-28 lg:h-fit">
+          {renderPriceSummaryCard()}
         </div>
       </div>
     </div>
@@ -385,7 +402,8 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between text-muted-foreground">
       <span>{label}</span>
-      <span className="text-foreground">{value}</span>
+      <span className="text-foreground font-medium">{value}</span>
     </div>
   );
 }
+

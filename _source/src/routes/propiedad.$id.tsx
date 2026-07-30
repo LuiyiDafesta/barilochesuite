@@ -48,6 +48,14 @@ function DetallePropiedad() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     const loadPropertyData = async () => {
@@ -160,6 +168,65 @@ function DetallePropiedad() {
     });
   };
 
+  const renderPropPriceSummaryCard = () => (
+    <Card className="border-border/70 shadow-lift">
+      <CardContent className="p-5 sm:p-6">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="font-display text-2xl font-semibold">{formatARS(displayRatePerNight)}</p>
+          <span className="text-sm text-muted-foreground">{nights > 0 ? "promedio / noche" : "por noche"}</span>
+        </div>
+        <p className="mt-1 text-xs text-teal font-medium">{prop.name}</p>
+
+        <Separator className="my-5" />
+
+        {nights > 0 ? (
+          <div className="space-y-3 text-sm">
+            {priceCalc && priceCalc.breakdown.length > 0 ? (
+              priceCalc.breakdown.map((item, idx) => (
+                <Row
+                  key={idx}
+                  label={
+                    priceCalc.breakdown.length > 1
+                      ? `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? "noche" : "noches"} (${item.label})`
+                      : `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? "noche" : "noches"}`
+                  }
+                  value={formatARS(item.total)}
+                />
+              ))
+            ) : (
+              <Row label={`${formatARS(basePrice)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
+            )}
+            {priceCalc && priceCalc.discountAmount > 0 && (
+              <Row label={priceCalc.discountLabel} value={`-${formatARS(priceCalc.discountAmount)}`} />
+            )}
+            {cleaningFee > 0 && (
+              <Row label="Limpieza final" value={formatARS(cleaningFee)} />
+            )}
+            {taxes > 0 && (
+              <Row label={`Impuestos (${taxPercent}%)`} value={formatARS(taxes)} />
+            )}
+            <Separator className="my-4" />
+            <div className="flex items-center justify-between font-bold">
+              <span>Total estimado</span>
+              <span className="text-xl text-teal">{formatARS(total)}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border px-4 py-6 text-center">
+            <CalendarDays className="mx-auto h-6 w-6 text-muted-foreground" />
+            <p className="mt-2 text-sm text-muted-foreground">
+              Elegí tus fechas para calcular la tarifa total.
+            </p>
+          </div>
+        )}
+
+        <Button className="mt-6 w-full rounded-full" size="lg" disabled={nights === 0} onClick={submit}>
+          Consultar disponibilidad
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="mx-auto max-w-7xl space-y-10 py-8 px-4 sm:px-6">
       <Button asChild variant="ghost" size="sm" className="-ml-2 rounded-full">
@@ -169,7 +236,7 @@ function DetallePropiedad() {
       </Button>
 
       {/* Hero Propiedad */}
-      <div className="rounded-3xl border border-border/80 bg-gradient-to-r from-primary via-primary/95 to-primary p-8 text-primary-foreground shadow-lift space-y-4">
+      <div className="rounded-3xl border border-border/80 bg-gradient-to-r from-primary via-primary/95 to-primary p-6 sm:p-8 text-primary-foreground shadow-lift space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Badge className="bg-teal text-teal-foreground font-semibold">
@@ -250,32 +317,39 @@ function DetallePropiedad() {
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
               <div className="mb-4 grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-border bg-secondary/40 px-4 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Check in</p>
-                  <p className="mt-1 truncate font-display text-sm font-semibold">{formatLong(range?.from)}</p>
+                <div className="rounded-xl border border-border bg-secondary/40 px-3 py-2.5 sm:px-4 sm:py-3">
+                  <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Check in</p>
+                  <p className="mt-1 truncate font-display text-xs sm:text-sm font-semibold">{formatLong(range?.from)}</p>
                 </div>
-                <div className="rounded-xl border border-border bg-secondary/40 px-4 py-3">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Check out</p>
-                  <p className="mt-1 truncate font-display text-sm font-semibold">{formatLong(range?.to)}</p>
+                <div className="rounded-xl border border-border bg-secondary/40 px-3 py-2.5 sm:px-4 sm:py-3">
+                  <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Check out</p>
+                  <p className="mt-1 truncate font-display text-xs sm:text-sm font-semibold">{formatLong(range?.to)}</p>
                 </div>
               </div>
 
-              <Calendar
-                mode="range"
-                numberOfMonths={2}
-                selected={range}
-                onSelect={setRange}
-                disabled={isDayDisabled}
-                modifiers={{
-                  ocupada: allOccupiedDates,
-                }}
-                modifiersClassNames={{
-                  ocupada: "bg-primary/85 text-primary-foreground rounded-md font-medium opacity-85",
-                }}
-                className="w-full [--cell-size:2.4rem]"
-              />
+              <div className="flex justify-center overflow-x-auto">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={isMobile ? 1 : 2}
+                  selected={range}
+                  onSelect={setRange}
+                  disabled={isDayDisabled}
+                  modifiers={{
+                    ocupada: allOccupiedDates,
+                  }}
+                  modifiersClassNames={{
+                    ocupada: "bg-primary/85 text-primary-foreground rounded-md font-medium opacity-85",
+                  }}
+                  className="w-full justify-center"
+                />
+              </div>
             </CardContent>
           </Card>
+
+          {/* En Móvil (< lg), mostramos el desglose de tarifas INMEDIATAMENTE después del Calendario */}
+          <div className="block lg:hidden">
+            {renderPropPriceSummaryCard()}
+          </div>
 
           {/* Formulario de Consulta */}
           <form onSubmit={submit} className="rounded-3xl border border-border bg-card p-6 shadow-soft space-y-4">
@@ -363,64 +437,9 @@ function DetallePropiedad() {
           )}
         </div>
 
-        {/* Sidebar Resumen Tarjeta */}
-        <div className="lg:sticky lg:top-28 lg:h-fit">
-          <Card className="border-border/70 shadow-lift">
-            <CardContent className="p-6">
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="font-display text-2xl font-semibold">{formatARS(displayRatePerNight)}</p>
-                <span className="text-sm text-muted-foreground">{nights > 0 ? "promedio / noche" : "por noche"}</span>
-              </div>
-              <p className="mt-1 text-xs text-teal font-medium">{prop.name}</p>
-
-              <Separator className="my-5" />
-
-              {nights > 0 ? (
-                <div className="space-y-3 text-sm">
-                  {priceCalc && priceCalc.breakdown.length > 0 ? (
-                    priceCalc.breakdown.map((item, idx) => (
-                      <Row
-                        key={idx}
-                        label={
-                          priceCalc.breakdown.length > 1
-                            ? `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? "noche" : "noches"} (${item.label})`
-                            : `${formatARS(item.pricePerNight)} × ${item.nights} ${item.nights === 1 ? "noche" : "noches"}`
-                        }
-                        value={formatARS(item.total)}
-                      />
-                    ))
-                  ) : (
-                    <Row label={`${formatARS(basePrice)} × ${nights} ${nights === 1 ? "noche" : "noches"}`} value={formatARS(subtotal)} />
-                  )}
-                  {priceCalc && priceCalc.discountAmount > 0 && (
-                    <Row label={priceCalc.discountLabel} value={`-${formatARS(priceCalc.discountAmount)}`} />
-                  )}
-                  {cleaningFee > 0 && (
-                    <Row label="Limpieza final" value={formatARS(cleaningFee)} />
-                  )}
-                  {taxes > 0 && (
-                    <Row label={`Impuestos (${taxPercent}%)`} value={formatARS(taxes)} />
-                  )}
-                  <Separator className="my-4" />
-                  <div className="flex items-center justify-between font-bold">
-                    <span>Total estimado</span>
-                    <span className="text-xl text-teal">{formatARS(total)}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center">
-                  <CalendarDays className="mx-auto h-6 w-6 text-muted-foreground" />
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Elegí tus fechas para calcular la tarifa total.
-                  </p>
-                </div>
-              )}
-
-              <Button className="mt-6 w-full rounded-full" size="lg" disabled={nights === 0} onClick={submit}>
-                Consultar disponibilidad
-              </Button>
-            </CardContent>
-          </Card>
+        {/* En Desktop (>= lg), mostramos la Card en la columna derecha sticky */}
+        <div className="hidden lg:block lg:sticky lg:top-28 lg:h-fit">
+          {renderPropPriceSummaryCard()}
         </div>
       </div>
     </div>

@@ -64,12 +64,34 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const [currentLang, setCurrentLang] = useState<Language>(getCurrentLanguage());
-  const [mainProp, setMainProp] = useState<PropertyItem | null>(null);
-  const [hero, setHero] = useState({
-    eyebrow: defaultHero.eyebrow,
-    title: defaultHero.title,
-    subtitle: defaultHero.subtitle,
-    bgImage: images.heroExterior,
+  const [mainProp, setMainProp] = useState<PropertyItem | null>(() => {
+    try {
+      const raw = localStorage.getItem("cached_main_property");
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return null;
+  });
+  const [hero, setHero] = useState(() => {
+    try {
+      const raw = localStorage.getItem("enterprise_site_settings");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.heroBgImage) {
+          return {
+            eyebrow: parsed.heroEyebrow || defaultHero.eyebrow,
+            title: parsed.heroTitle || defaultHero.title,
+            subtitle: parsed.heroSubtitle || defaultHero.subtitle,
+            bgImage: parsed.heroBgImage,
+          };
+        }
+      }
+    } catch {}
+    return {
+      eyebrow: defaultHero.eyebrow,
+      title: defaultHero.title,
+      subtitle: defaultHero.subtitle,
+      bgImage: images.heroExterior,
+    };
   });
 
   useEffect(() => {
@@ -85,6 +107,9 @@ function Home() {
         const activeMain = propsData.find((p) => p.isMain && p.active !== false) || propsData[0];
         if (activeMain) {
           setMainProp(activeMain);
+          try {
+            localStorage.setItem("cached_main_property", JSON.stringify(activeMain));
+          } catch {}
         }
 
         const eyebrow = (currentLang === "en" && s.heroEyebrow_en) || (currentLang === "pt" && s.heroEyebrow_pt) || s.heroEyebrow || defaultHero.eyebrow;
