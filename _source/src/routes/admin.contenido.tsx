@@ -81,7 +81,7 @@ function Contenido() {
       setSubtitleEn(s.heroSubtitle_en || "");
       setSubtitlePt(s.heroSubtitle_pt || "");
 
-      setBgImage(s.heroBgImage || "/hero-exterior.jpg");
+      setBgImage(s.heroBgImage || "");
 
       setExpTitle(s.experienceTitle || "No es un departamento. Es una forma de vivir Bariloche.");
       setExpTitleEn(s.experienceTitle_en || "");

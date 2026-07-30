@@ -341,7 +341,7 @@ export const settingService = {
       heroEyebrow: "BARILOCHE · PATAGONIA ARGENTINA",
       heroTitle: "Un refugio de montaña frente al Nahuel Huapi",
       heroSubtitle: "Departamento boutique de alta gama en San Carlos de Bariloche. Diseño cálido, vistas infinitas y el confort de un hotel cinco estrellas.",
-      heroBgImage: "/hero-exterior.jpg",
+      heroBgImage: "",
 
       // CMS Experiencia
       experienceTitle: "No es un departamento. Es una forma de vivir Bariloche.",

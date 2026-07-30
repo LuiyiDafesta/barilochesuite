@@ -73,24 +73,23 @@ function Home() {
   });
   const [hero, setHero] = useState(() => {
     try {
+      const cachedBg = localStorage.getItem("cached_hero_bg");
       const raw = localStorage.getItem("enterprise_site_settings");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.heroBgImage) {
-          return {
-            eyebrow: parsed.heroEyebrow || defaultHero.eyebrow,
-            title: parsed.heroTitle || defaultHero.title,
-            subtitle: parsed.heroSubtitle || defaultHero.subtitle,
-            bgImage: parsed.heroBgImage,
-          };
-        }
+      if (raw || cachedBg) {
+        const parsed = raw ? JSON.parse(raw) : {};
+        return {
+          eyebrow: parsed.heroEyebrow || defaultHero.eyebrow,
+          title: parsed.heroTitle || defaultHero.title,
+          subtitle: parsed.heroSubtitle || defaultHero.subtitle,
+          bgImage: cachedBg || parsed.heroBgImage || "",
+        };
       }
     } catch {}
     return {
       eyebrow: defaultHero.eyebrow,
       title: defaultHero.title,
       subtitle: defaultHero.subtitle,
-      bgImage: images.heroExterior,
+      bgImage: "",
     };
   });
 
@@ -116,12 +115,19 @@ function Home() {
         const title = (currentLang === "en" && s.heroTitle_en) || (currentLang === "pt" && s.heroTitle_pt) || s.heroTitle || defaultHero.title;
         const subtitle = (currentLang === "en" && s.heroSubtitle_en) || (currentLang === "pt" && s.heroSubtitle_pt) || s.heroSubtitle || defaultHero.subtitle;
 
+        const bgImage = s.heroBgImage || "";
         setHero({
           eyebrow,
           title,
           subtitle,
-          bgImage: s.heroBgImage || images.heroExterior,
+          bgImage,
         });
+
+        if (bgImage) {
+          try {
+            localStorage.setItem("cached_hero_bg", bgImage);
+          } catch {}
+        }
       } catch (e) {
         console.error("Error al cargar hero:", e);
       }
@@ -139,14 +145,16 @@ function Home() {
       <Navbar transparent />
 
       {/* HERO */}
-      <section className="relative flex min-h-screen items-end overflow-hidden">
-        <img
-          src={hero.bgImage}
-          alt="Fachada iluminada del departamento"
-          width={1920}
-          height={1088}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+      <section className="relative flex min-h-screen items-end overflow-hidden bg-primary">
+        {hero.bgImage ? (
+          <img
+            src={hero.bgImage}
+            alt="Portada de la propiedad"
+            width={1920}
+            height={1088}
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+          />
+        ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/35 to-primary/40" />
 
         <div className="relative mx-auto w-full max-w-7xl px-5 pb-24 pt-32 lg:px-8">
