@@ -301,9 +301,26 @@ const saveLocalEnterpriseSettings = (data: any) => {
   }
 };
 
+// Helper function to compare experience blocks ignoring key ordering issues from jsonb
+const areExperienceBlocksEqual = (a: any[], b: any[]) => {
+  const arrA = a || [];
+  const arrB = b || [];
+  if (arrA.length !== arrB.length) return false;
+  
+  const keys = ['id', 'title', 'description', 'image', 'badge', 'title_en', 'title_pt', 'description_en', 'description_pt', 'text'];
+  for (let i = 0; i < arrA.length; i++) {
+    const blockA = arrA[i] || {};
+    const blockB = arrB[i] || {};
+    for (const key of keys) {
+      if (blockA[key] !== blockB[key]) return false;
+    }
+  }
+  return true;
+};
+
 // Servicios de Ajustes de Precios, Reglas Globales y White-Label CMS
 export const settingService = {
-  async get() {
+  async get(preventSync = false) {
     const localTax = localStorage.getItem("site_tax_percent");
     const fallbackTax = localTax !== null ? Number(localTax) : 0;
     const localEnt = getLocalEnterpriseSettings();
@@ -413,10 +430,10 @@ export const settingService = {
 
     // Auto-migración / Sincronización: si localEnt en este dispositivo tiene datos o fotos de experiencia distintos a Supabase,
     // sincronizamos inmediatamente hacia Supabase para que esté disponible en móviles.
-    if (localEnt && Object.keys(localEnt).length > 0) {
-      const localExp = JSON.stringify(localEnt.experienceBlocks || []);
-      const dbExp = JSON.stringify(dbCms.experienceBlocks || []);
-      if (localExp !== dbExp || !data?.cms_data || Object.keys(data.cms_data).length === 0) {
+    if (!preventSync && localEnt && Object.keys(localEnt).length > 0) {
+      const localExp = localEnt.experienceBlocks || [];
+      const dbExp = dbCms.experienceBlocks || [];
+      if (!areExperienceBlocksEqual(localExp, dbExp) || !data?.cms_data || Object.keys(data.cms_data).length === 0) {
         setTimeout(() => {
           this.update({ ...defaults, ...dbCms, ...localEnt }).catch((err) =>
             console.error("Error auto-sincronizando cms_data hacia Supabase:", err)
@@ -464,7 +481,7 @@ export const settingService = {
     saveLocalEnterpriseSettings(settings);
 
     // Obtener cms_data actual o inicializar
-    const current = await this.get();
+    const current = await this.get(true);
     const cmsData = {
       heroBgImage: settings.heroBgImage ?? current.heroBgImage,
       heroEyebrow: settings.heroEyebrow ?? current.heroEyebrow,
