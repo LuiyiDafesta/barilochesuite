@@ -14,9 +14,16 @@ export const Route = createFileRoute("/admin/login")({
 });
 
 function AdminLogin() {
-  const [email, setEmail] = useState("lsnetinformatica2024@gmail.com");
+  const [email, setEmail] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("last_admin_email") || "";
+    }
+    return "";
+  });
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [showResend, setShowResend] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -28,20 +35,53 @@ function AdminLogin() {
 
     try {
       setLoading(true);
+      setShowResend(false);
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
 
       if (error) throw error;
 
+      if (typeof window !== "undefined") {
+        localStorage.setItem("last_admin_email", email.trim());
+      }
+
       toast.success("¡Bienvenido al Panel Administrador!");
       navigate({ to: "/admin" });
     } catch (err: any) {
       console.error("Error de login:", err);
-      toast.error(err.message || "Credenciales incorrectas");
+      const msg = err.message || "";
+      if (msg.toLowerCase().includes("email not confirmed")) {
+        setShowResend(true);
+        toast.error("El email aún no ha sido confirmado. Revisá tu casilla de correo o reenviá el enlace.");
+      } else if (msg.toLowerCase().includes("invalid login credentials")) {
+        toast.error("Correo electrónico o contraseña incorrectos.");
+      } else {
+        toast.error(msg || "Error al iniciar sesión");
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast.error("Ingresá tu correo para reenviar el enlace.");
+      return;
+    }
+    try {
+      setResending(true);
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim(),
+      });
+      if (error) throw error;
+      toast.success("Correo de confirmación reenviado. Por favor revisá tu bandeja de entrada o spam.");
+    } catch (err: any) {
+      toast.error(err.message || "Error al reenviar confirmación.");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -94,6 +134,25 @@ function AdminLogin() {
               Iniciar sesión
             </Button>
           </form>
+
+          {showResend && (
+            <div className="mt-4 pt-4 border-t border-border/60 text-center space-y-2">
+              <p className="text-xs text-muted-foreground">
+                ¿El correo está pendiente de confirmación?
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-xl w-full text-xs"
+                onClick={handleResendConfirmation}
+                disabled={resending}
+              >
+                {resending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+                Reenviar correo de confirmación
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
